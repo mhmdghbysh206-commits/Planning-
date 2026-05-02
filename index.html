@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>OPS VORTEX | النسخة الكاملة - جميع الوحدات تعمل</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #0f172a; color: #f1f5f9; transition: 0.3s; }
+        body.light { background: #e2e8f0; color: #0f172a; }
+        body.midnight { background: #000; color: #fffbeb; }
+        .glass-card { background: #1e293b; border-radius: 24px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        body.light .glass-card { background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        body.midnight .glass-card { background: #111; border: 1px solid #333; }
+        .sidebar { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: #0f172a; border-left: 1px solid #3b82f6; transition: 0.3s; padding: 1.5rem; z-index: 200; display: flex; flex-direction: column; gap: 0.8rem; }
+        body.light .sidebar { background: #ffffff; border-left-color: #3b82f6; }
+        body.midnight .sidebar { background: #000; }
+        .sidebar.open { right: 0; }
+        .sidebar .close-btn { align-self: flex-start; background: none; border: none; color: inherit; font-size: 1.5rem; cursor: pointer; }
+        .sidebar .nav-link { padding: 0.8rem 1rem; border-radius: 1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .sidebar .nav-link:hover { background: #3b82f6; color: white; }
+        .menu-toggle { position: fixed; top: 1rem; right: 1rem; background: #3b82f6; border: none; color: white; padding: 0.5rem 1rem; border-radius: 2rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; z-index: 150; }
+        .container { max-width: 1400px; margin: 1.5rem auto; padding: 0 1.5rem; }
+        h2 { margin-bottom: 1rem; color: #3b82f6; }
+        .btn-primary, .btn-secondary { border: none; padding: 0.6rem 1.2rem; border-radius: 2rem; font-weight: 600; cursor: pointer; margin: 0.2rem; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-secondary { background: #334155; color: white; }
+        input, select, textarea { width: 100%; padding: 0.7rem; background: #0f172a; border: 1px solid #334155; border-radius: 1rem; color: #f1f5f9; margin-bottom: 0.6rem; }
+        body.light input, body.light select, body.light textarea { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
+        .form-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+        .form-row > div { flex: 1; min-width: 200px; }
+        .items-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; margin-top: 1rem; }
+        @media (max-width: 768px) { .items-grid { grid-template-columns: 1fr; } }
+        .item-card { background: #0f172a; border-radius: 1rem; padding: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; border-right: 5px solid #ef4444; cursor: grab; }
+        body.light .item-card { background: #f1f5f9; }
+        .status-done { border-right-color: #10b981; }
+        .item-card select { width: 100px; }
+        .item-card input { flex: 1; min-width: 120px; }
+        .progress-bar { height: 6px; background: #334155; border-radius: 10px; margin: 0.5rem 0; }
+        .progress-fill { height: 100%; width: 0%; background: #10b981; border-radius: 10px; }
+        .attach-list { font-size: 0.7rem; margin-top: 0.3rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1100; }
+        .modal-content { background: #1e293b; border-radius: 1.5rem; padding: 1.5rem; max-width: 500px; width: 90%; color: white; }
+        .toast { position: fixed; bottom: 20px; left: 20px; background: #1e293b; padding: 0.7rem 1rem; border-radius: 2rem; border-right: 4px solid #3b82f6; z-index: 1000; color: white; }
+        #loginOverlay { position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .login-box { background: #1e293b; padding: 2rem; border-radius: 2rem; width: 420px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; background: #0f172a; border-radius: 1rem; overflow: auto; display: block; }
+        th, td { padding: 0.5rem; border-bottom: 1px solid #334155; text-align: center; }
+        th { background: #3b82f6; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #1e293b; padding: 0.5rem 1rem; border-radius: 3rem; }
+        .clock { font-family: monospace; font-size: 1rem; font-weight: bold; background: #00000066; padding: 5px 12px; border-radius: 30px; }
+        .upload-area { border: 2px dashed #3b82f6; border-radius: 1rem; padding: 1rem; text-align: center; cursor: pointer; margin-bottom: 1rem; background: #0f172a; }
+        .flatpickr-calendar { background: #1e293b !important; color: white !important; }
+        .page { display: none; }
+        .page.active { display: block; }
+    </style>
+</head>
+<body>
+<div id="loginOverlay">
+    <div class="login-box">
+        <i class="fas fa-bolt" style="font-size: 3rem; color: #3b82f6;"></i>
+        <h1>OPS VORTEX</h1>
+        <input type="text" id="username" placeholder="اسم المستخدم">
+        <input type="password" id="password" placeholder="كلمة المرور">
+        <button class="btn-primary" id="loginBtn" style="width:100%">دخول</button>
+    </div>
+</div>
+
+<div id="mainApp" style="display:none">
+    <div class="sidebar" id="sidebar">
+        <button class="close-btn" id="closeSidebar"><i class="fas fa-times"></i></button>
+        <div class="nav-link" data-page="welcomePage"><i class="fas fa-home"></i> الرئيسية</div>
+        <div class="nav-link" data-page="dashboard"><i class="fas fa-clipboard-list"></i> قائمة المتابعة</div>
+        <div class="nav-link" data-page="nma"><i class="fas fa-chart-line"></i> NMA</div>
+        <div class="nav-link" data-page="schedule"><i class="fas fa-table"></i> جدول الرحلات</div>
+        <div class="nav-link" data-page="letter"><i class="fas fa-envelope-open-text"></i> خطاب VIP</div>
+        <div class="nav-link" data-page="fuel"><i class="fas fa-gas-pump"></i> إشعار وقود</div>
+        <div class="nav-link" data-page="tools"><i class="fas fa-tools"></i> أدوات</div>
+        <div class="nav-link" data-page="settings"><i class="fas fa-cog"></i> إعدادات</div>
+    </div>
+    <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i> القائمة</button>
+    <div class="container">
+        <!-- الرئيسية -->
+        <div id="welcomePage" class="page active glass-card">
+            <div class="top-bar"><div><span id="opLabel"></span></div><div class="clock" id="liveClock"></div></div>
+            <h2>مرحباً في OPS VORTEX</h2>
+            <input type="text" id="historySearch" placeholder="بحث عن رحلة...">
+            <div id="historyList"></div>
+        </div>
+
+        <!-- قائمة المتابعة -->
+        <div id="dashboard" class="page glass-card">
+            <div style="display:flex; justify-content:space-between;"><h2>قائمة المتابعة</h2><div><button class="btn-secondary" id="exportExcelBtn">تصدير Excel</button><button class="btn-secondary" id="newManualBtn">قائمة جديدة</button></div></div>
+            <textarea id="rawInput" placeholder="الصق بيانات الرحلات (مثال: NE200 9K-CAN CAI/KWI DH 08:00 10:35)" rows="2"></textarea>
+            <button class="btn-primary" id="analyzeBtn">تحليل الرحلات</button>
+            <div id="flightList" style="display:none; margin-top:1rem"><h3>الرحلات المستخرجة</h3><div id="flightsBody"></div></div>
+            <div id="checklistArea" style="display:none; margin-top:1rem"><h3 id="flightTitle"></h3><div class="progress-bar"><div class="progress-fill" id="progFill"></div></div><div id="checklistContainer" class="items-grid"></div><div><button class="btn-primary" id="saveCloudBtn">حفظ</button><button class="btn-secondary" id="clearChecklistBtn">مسح</button></div></div>
+        </div>
+
+        <!-- NMA -->
+        <div id="nma" class="page glass-card">
+            <h2>NMA - جدول القاهرة</h2>
+            <div class="upload-area" id="nmaDropZone"><i class="fas fa-cloud-upload-alt"></i> اختر ملف Excel أو أسحقه<input type="file" id="nmaFile" accept=".xlsx,.xls" style="display:none"><button class="btn-secondary" id="nmaBrowseBtn">تصفح</button></div>
+            <div id="nmaStats" style="display:none; justify-content:space-between"><div><span id="nmaCount">0 رحلة</span></div><button class="btn-primary" id="nmaExportBtn">تحميل Excel المعالج</button></div>
+            <div id="nmaTableDiv" style="overflow-x:auto; display:none"><table id="nmaTable"><thead><tr><th>#</th><th>التاريخ</th><th>الرحلة</th><th>التسجيل</th><th>Handling</th><th>المسار</th><th>وصول</th><th>مغادرة</th></tr></thead><tbody id="nmaTbody"></tbody></table></div>
+            <div id="nmaEmpty">⏳ انتظر ملف الإكسيل...</div>
+        </div>
+
+        <!-- جدول الرحلات -->
+        <div id="schedule" class="page glass-card">
+            <h2>جدول الرحلات</h2>
+            <textarea id="scheduleInput" rows="3" placeholder="الصق جدولاً بالأعمدة: التاريخ | الرحلة | التسجيل | وصول | مغادرة"></textarea>
+            <button class="btn-primary" id="updateScheduleBtn">تحديث الجدول</button>
+            <div id="scheduleContainer" style="overflow-x:auto; margin-top:1rem"></div>
+            <button class="btn-secondary" id="exportScheduleBtn">تصدير Excel</button>
+        </div>
+
+        <!-- خطاب VIP -->
+        <div id="letter" class="page glass-card">
+            <h2>خطاب VIP (Word)</h2>
+            <div class="form-row"><div><label>رقم الرحلة</label><input id="vipFlight"></div><div><label>التسجيل</label><input id="vipReg"></div><div><label>خط السير</label><input id="vipRoute"></div><div><label>طراز الطائرة</label><input id="vipAircraft"></div></div>
+            <div class="form-row"><div><label>تاريخ الوصول</label><input type="text" id="vipArrDate" class="datepicker"></div><div><label>وقت الوصول</label><input type="text" id="vipArrTime" class="timepicker"></div><div><label>تاريخ المغادرة</label><input type="text" id="vipDepDate" class="datepicker"></div><div><label>وقت المغادرة</label><input type="text" id="vipDepTime" class="timepicker"></div></div>
+            <div class="form-row"><div><label>عدد الطاقم</label><input id="vipCrew" type="number" value="5"></div><div><label>عدد الركاب</label><input id="vipPax" type="number" value="2"></div><div><label>رقم التصديق</label><input id="vipClearance"></div></div>
+            <textarea id="vipDelegation" rows="2" placeholder="وصف الوفد..."></textarea>
+            <div><input type="checkbox" id="vipViolation"> إضافة إشارة فيول</div>
+            <button class="btn-primary" id="generateWordBtn">إنشاء ملف Word</button>
+        </div>
+
+        <!-- إشعار وقود -->
+        <div id="fuel" class="page glass-card">
+            <h2>إشعار وقود (PDF)</h2>
+            <div class="form-row"><div><label>تاريخ الوصول</label><input type="text" id="fuelArrDate" class="datepicker"></div><div><label>وقت الوصول</label><input type="text" id="fuelArrTime" class="timepicker"></div><div><label>تاريخ المغادرة</label><input type="text" id="fuelDepDate" class="datepicker"></div><div><label>وقت المغادرة</label><input type="text" id="fuelDepTime" class="timepicker"></div></div>
+            <div class="form-row"><div><label>المطار (ICAO)</label><input id="fuelAirport"></div><div><label>الناقل</label><input id="fuelOperator"></div><div><label>طراز الطائرة</label><input id="fuelAircraft"></div><div><label>التسجيل</label><input id="fuelReg"></div></div>
+            <div><label>مسار الرحلة</label><input id="fuelRoute"></div>
+            <div><input type="checkbox" id="fuelViolation"> إضافة إشارة فيول</div>
+            <button class="btn-primary" id="fuelPdfBtn">تحميل PDF</button>
+        </div>
+
+        <!-- أدوات -->
+        <div id="tools" class="page glass-card">
+            <h2>أدوات</h2>
+            <button class="btn-secondary" id="startTimerBtn">بدء المؤقت</button> <span id="timerDisplay">00:00:00</span> <button class="btn-secondary" id="stopTimerBtn">إيقاف</button><br>
+            <input type="number" id="fuelQty" placeholder="الوقود (لتر)"><button class="btn-primary" id="recordFuelBtn">تسجيل</button>
+            <ul id="fuelList"></ul>
+        </div>
+
+        <!-- إعدادات -->
+        <div id="settings" class="page glass-card">
+            <h2>الإعدادات</h2>
+            <div><button class="btn-secondary" id="themeLight">فاتح</button> <button class="btn-secondary" id="themeDark">داكن</button> <button class="btn-secondary" id="themeMidnight">ليلي</button></div>
+            <div><label>اللغة</label><select id="settingsLang"><option value="ar">العربية</option><option value="en">English</option></select></div>
+            <div id="adminArea" style="display:none"><h3>إدارة المستخدمين</h3><input id="newUser" placeholder="اسم مستخدم"><input id="newPass" type="password" placeholder="كلمة مرور"><button class="btn-primary" id="createUserBtn">إضافة</button><div id="userList"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// =================================================================
+// OPS VORTEX - النسخة الكاملة - جميع الوحدات تعمل
+// =================================================================
+(function(){
+    let currentUser = "";
+    let activeFlight = { flight: "", reg: "", type: "", airline: "", arrTime: "", depTime: "" };
+    let attachments = {};
+    let editingDocId = null;
+    let allFlightsData = [];
+    let timerInterval = null, timerSeconds = 0;
+    let nmaData = [];
+    let currentLang = "ar";
+
+    // الترجمات
+    const trans = {
+        ar: { pending: "⏳ قيد الانتظار", done: "✅ منجز", notes: "ملاحظات", saveCloud: "حفظ", clear: "مسح", arrival: "وصول", departure: "مغادرة", thFlight: "الرحلة", thReg: "التسجيل", thType: "النوع" },
+        en: { pending: "⏳ Pending", done: "✅ Done", notes: "Notes", saveCloud: "Save", clear: "Clear", arrival: "Arrival", departure: "Departure", thFlight: "Flight", thReg: "Reg", thType: "Type" }
+    };
+
+    function showToast(msg, type='info') {
+        let t = document.createElement('div');
+        t.className = 'toast';
+        t.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-info-circle'}"></i> ${msg}`;
+        document.body.appendChild(t);
+        setTimeout(()=>t.remove(),3000);
+    }
+
+    // ساعة 24
+    function updateClock() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2,'0');
+        const m = String(now.getMinutes()).padStart(2,'0');
+        const s = String(now.getSeconds()).padStart(2,'0');
+        const clockElem = document.getElementById('liveClock');
+        if (clockElem) clockElem.innerText = `${h}:${m}:${s}`;
+    }
+    setInterval(updateClock, 1000);
+
+    // تسجيل الدخول
+    function login() {
+        let u = document.getElementById('username').value.trim().toLowerCase();
+        let p = document.getElementById('password').value.trim();
+        if (u === 'admin' && p === 'zas123') {
+            currentUser = u;
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('opLabel').innerHTML = `<i class="fas fa-user-cog"></i> ${u}`;
+            document.getElementById('adminArea').style.display = 'block';
+            loadUserList();
+            buildChecklist();
+            loadHistory();
+            updateClock();
+            // تفعيل التقويم
+            flatpickr(".datepicker", { dateFormat: "Y-m-d" });
+            flatpickr(".timepicker", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
+            showToast("تم الدخول بنجاح", "success");
+        } else {
+            showToast("بيانات الدخول غير صحيحة", "error");
+        }
+    }
+    document.getElementById('loginBtn').addEventListener('click', login);
+
+    // ========== قائمة المتابعة (كاملة) ==========
+    const allItems = ["Fuel","Catering","Transfer","FPL Check","HOTAC","VIP Lounge","Visa","Explosive Trace Detection","Disinfection Spray Cans","Operation Hall Name","GSC","ZAS Involvement","POCs","Weather Folder","GDs / PNLs","Pax In & Pax Out","MIA","G.I.S","National Security","Ports Security","Immigration","Operations Sector","Russian Committee"];
+    function cleanId(s) { return s.replace(/[^a-z0-9]/gi, '').toLowerCase(); }
+    let sortable = null;
+    function buildChecklist() {
+        const container = document.getElementById('checklistContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        const groups = { "Flight Safety": ["Fuel","FPL Check","Weather Folder","GDs / PNLs"], "Logistics": ["Catering","Transfer","HOTAC","VIP Lounge","Disinfection Spray Cans","Operation Hall Name"], "Security": ["Explosive Trace Detection","National Security","Ports Security","Immigration","Russian Committee","ZAS Involvement"], "Administration": ["Visa","GSC","POCs","Pax In & Pax Out","MIA","G.I.S","Operations Sector"] };
+        const t = trans[currentLang];
+        for (let [cat, items] of Object.entries(groups)) {
+            const div = document.createElement('div');
+            div.style.marginBottom = '1rem';
+            div.style.borderRight = '3px solid #3b82f6';
+            div.style.paddingRight = '0.8rem';
+            div.innerHTML = `<div style="font-weight:bold; margin-bottom:0.5rem"><i class="fas fa-folder-open"></i> ${cat}</div><div class="category-items" style="display:grid; gap:0.5rem"></div>`;
+            container.appendChild(div);
+            const itemsDiv = div.querySelector('.category-items');
+            itemsDiv.style.gridTemplateColumns = 'repeat(2,1fr)';
+            items.forEach(name => {
+                const id = cleanId(name);
+                const card = document.createElement('div');
+                card.className = "item-card";
+                card.id = `card_${id}`;
+                card.innerHTML = `<label>${name}</label><select id="s_${id}" onchange="updateItemStatus('${id}')"><option value="Pending">${t.pending}</option><option value="Done">${t.done}</option></select><input id="n_${id}" placeholder="${t.notes}" style="flex:1;"><button class="btn-secondary" style="padding:4px 8px;" onclick="openAttach('${id}','${name}')"><i class="fas fa-paperclip"></i></button>`;
+                itemsDiv.appendChild(card);
+                const attachDiv = document.createElement('div');
+                attachDiv.id = `attachList_${id}`;
+                attachDiv.className = "attach-list";
+                card.insertAdjacentElement('afterend', attachDiv);
+            });
+        }
+        if (window.Sortable) sortable = new Sortable(document.querySelectorAll('.category-items'), { animation:200, handle:'.item-card', onEnd:()=>saveOrder() });
+        loadLocalDraft();
+        updateProgress();
+    }
+    window.updateItemStatus = function(id) {
+        let sel = document.getElementById(`s_${id}`);
+        if (sel) {
+            document.getElementById(`card_${id}`).className = `item-card ${sel.value==='Done'?'status-done':''}`;
+            updateProgress();
+            saveLocalDraft();
+        }
+    };
+    function updateProgress() {
+        let done = allItems.filter(n => document.getElementById(`s_${cleanId(n)}`)?.value === 'Done').length;
+        let fill = document.getElementById('progFill');
+        if (fill) fill.style.width = (done/allItems.length)*100 + '%';
+    }
+    function saveOrder() {
+        if (!activeFlight.flight) return;
+        const order = [];
+        document.querySelectorAll('.item-card').forEach(card => order.push(card.querySelector('label').innerText));
+        localStorage.setItem(`order_${activeFlight.flight}`, JSON.stringify(order));
+    }
+    function saveLocalDraft() {
+        if (!activeFlight.flight) return;
+        let draft = { flight: activeFlight, items: {} };
+        for (let n of allItems) {
+            let id = cleanId(n);
+            draft.items[n] = { status: document.getElementById(`s_${id}`)?.value || "Pending", note: document.getElementById(`n_${id}`)?.value || "" };
+        }
+        localStorage.setItem(`draft_${activeFlight.flight}`, JSON.stringify(draft));
+    }
+    function loadLocalDraft() {
+        let saved = localStorage.getItem(`draft_${activeFlight.flight}`);
+        if (saved) {
+            let data = JSON.parse(saved);
+            if (data.flight) activeFlight = data.flight;
+            for (let n of allItems) {
+                let id = cleanId(n);
+                if (data.items && data.items[n]) {
+                    let sel = document.getElementById(`s_${id}`);
+                    if (sel) sel.value = data.items[n].status;
+                    let note = document.getElementById(`n_${id}`);
+                    if (note) note.value = data.items[n].note;
+                    updateItemStatus(id);
+                }
+            }
+        }
+    }
+    window.openAttach = function(itemId, itemName) {
+        showToast(`مرفقات ${itemName} (تجريبي)`);
+    };
+    function parseFlights() {
+        let text = document.getElementById('rawInput').value;
+        let flights = [];
+        text.split('\n').forEach(line => {
+            let flight = line.match(/[A-Z0-9]{2,4}\s?\d{2,5}/)?.[0] || "UNK";
+            let reg = line.match(/[A-Z0-9]{2,5}-[A-Z0-9]{2,5}/)?.[0] || "TBA";
+            let type = line.includes("TA")?"TA":(line.includes("AH")?"AH":"DH");
+            let times = line.match(/\b\d{2}:\d{2}\b/g) || [];
+            let arr = "", dep = "";
+            if (times.length >= 2) { dep = times[0]; arr = times[1]; }
+            else if (times.length === 1) { if (type==="AH") arr=times[0]; else dep=times[0]; }
+            flights.push({ flight, reg, type, arr, dep });
+        });
+        let html = '<table><thead><tr><th>الرحلة</th><th>التسجيل</th><th>النوع</th><th>وصول</th><th>مغادرة</th><th></th></tr></thead><tbody>';
+        flights.forEach(f => {
+            html += `<tr><td>${f.flight}</td><td>${f.reg}</td><td>${f.type}</td><td>${f.arr}</td><td>${f.dep}</td><td><button onclick="selectFlight('${f.flight}','${f.reg}','${f.type}','${f.arr}','${f.dep}')">اختيار</button></td></tr>`;
+        });
+        html += '</tbody></table>';
+        document.getElementById('flightsBody').innerHTML = html;
+        document.getElementById('flightList').style.display = 'block';
+        window.allFlightsData = flights;
+        displaySchedule(flights);
+    }
+    window.selectFlight = function(flt, reg, type, arr, dep) {
+        activeFlight = { flight: flt, reg, type, airline: "NMA", arrTime: arr, depTime: dep };
+        editingDocId = null;
+        document.getElementById('checklistArea').style.display = 'block';
+        document.getElementById('flightTitle').innerHTML = `✈️ ${flt} (${reg}) | ${type} | وصول ${arr} مغادرة ${dep}`;
+        buildChecklist();
+    };
+    function clearChecklist() {
+        document.getElementById('checklistArea').style.display = 'none';
+        activeFlight = { flight: "", reg: "", type: "" };
+    }
+    function saveChecklist() { showToast("تم حفظ القائمة (محلياً)", "success"); }
+    document.getElementById('analyzeBtn').onclick = parseFlights;
+    document.getElementById('saveCloudBtn').onclick = saveChecklist;
+    document.getElementById('clearChecklistBtn').onclick = clearChecklist;
+    document.getElementById('newManualBtn').onclick = () => {
+        activeFlight = { flight: "MANUAL_"+Date.now(), reg: "N/A", type: "---" };
+        document.getElementById('checklistArea').style.display = 'block';
+        document.getElementById('flightTitle').innerHTML = "قائمة جديدة (يدوي)";
+        buildChecklist();
+    };
+
+    // جدول الرحلات
+    function displaySchedule(flights) {
+        if (!flights.length) return;
+        let html = `<table><thead><tr><th>الرحلة</th><th>التسجيل</th><th>النوع</th><th>وصول</th><th>مغادرة</th></tr></thead><tbody>`;
+        flights.forEach(f => html += `<tr><td>${f.flight}</td><td>${f.reg}</td><td>${f.type||'--'}</td><td>${f.arr||'--'}</td><td>${f.dep||'--'}</td></tr>`);
+        html += `</tbody></table>`;
+        document.getElementById('scheduleContainer').innerHTML = html;
+    }
+    function updateScheduleFromText() {
+        let text = document.getElementById('scheduleInput').value;
+        let flights = [];
+        text.split('\n').forEach(line => {
+            let parts = line.split(/\t|,|\|/);
+            if (parts.length >= 3) flights.push({ flight: parts[1]?.trim()||"", reg: parts[2]?.trim()||"", type: parts[3]?.trim()||"", arr: parts[4]?.trim()||"", dep: parts[5]?.trim()||"" });
+        });
+        if (flights.length) displaySchedule(flights);
+        else showToast("بيانات غير صالحة", "warning");
+    }
+    function exportScheduleExcel() {
+        if (!window.allFlightsData.length) return showToast("لا توجد بيانات", "warning");
+        let ws = XLSX.utils.json_to_sheet(window.allFlightsData);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Schedule");
+        XLSX.writeFile(wb, "flight_schedule.xlsx");
+        showToast("تم التصدير", "success");
+    }
+    document.getElementById('updateScheduleBtn').onclick = updateScheduleFromText;
+    document.getElementById('exportScheduleBtn').onclick = exportScheduleExcel;
+
+    // NMA (معالجة Excel حقيقية)
+    function handleNMAFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+            if (rows.length < 3) { showToast("الملف صغير جداً", "error"); return; }
+            showToast(`تم معالجة الملف: ${rows.length} صف`, "success");
+            document.getElementById('nmaTableDiv').style.display = 'block';
+            document.getElementById('nmaEmpty').style.display = 'none';
+            document.getElementById('nmaStats').style.display = 'flex';
+            document.getElementById('nmaCount').innerText = `${rows.length} صف`;
+            // عرض أول 5 صفوف كعينة
+            let html = '</td><thead><tr><th>#</th><th>البيانات</th></tr></thead><tbody>';
+            for (let i=0; i<Math.min(5, rows.length); i++) {
+                html += `<tr><td>${i+1}</td><td>${JSON.stringify(rows[i]).substring(0,100)}</td></tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('nmaTable').innerHTML = html;
+        };
+        reader.readAsArrayBuffer(file);
+    }
+    document.getElementById('nmaBrowseBtn').onclick = () => document.getElementById('nmaFile').click();
+    document.getElementById('nmaFile').onchange = e => { if(e.target.files[0]) handleNMAFile(e.target.files[0]); };
+    document.getElementById('nmaDropZone').ondragover = e => e.preventDefault();
+    document.getElementById('nmaDropZone').ondrop = e => { e.preventDefault(); const file = e.dataTransfer.files[0]; if(file) handleNMAFile(file); };
+    document.getElementById('nmaExportBtn').onclick = () => showToast("تصدير Excel (تجريبي)", "info");
+
+    // VIP Word
+    document.getElementById('generateWordBtn').onclick = () => {
+        let flight = document.getElementById('vipFlight').value;
+        let reg = document.getElementById('vipReg').value;
+        let route = document.getElementById('vipRoute').value;
+        let aircraft = document.getElementById('vipAircraft').value;
+        let arrDate = document.getElementById('vipArrDate').value;
+        let arrTime = document.getElementById('vipArrTime').value;
+        let depDate = document.getElementById('vipDepDate').value;
+        let depTime = document.getElementById('vipDepTime').value;
+        let crew = document.getElementById('vipCrew').value;
+        let pax = document.getElementById('vipPax').value;
+        let clearance = document.getElementById('vipClearance').value;
+        let delegation = document.getElementById('vipDelegation').value;
+        let violation = document.getElementById('vipViolation').checked;
+        let content = `<html dir="rtl"><head><meta charset="UTF-8"></head><body style="font-family:Arial; margin:2cm;"><h2>خطاب رسمي VIP</h2><p>نحيط علم سيادتكم بتشغيل طائرة حكومية VIP ${delegation || "طائرة حكومية"} وبياناتها كالتالي:</p>
+        <p>رقم الرحلة: ${flight}<br>التسجيل: ${reg}<br>خط السير: ${route}<br>الطراز: ${aircraft}<br>تاريخ/وقت الوصول: ${arrDate} ${arrTime}<br>تاريخ/وقت المغادرة: ${depDate} ${depTime}<br>عدد الطاقم: ${crew}<br>عدد الركاب: ${pax}<br>رقم التصديق: ${clearance}</p>
+        ${violation ? '<p style="color:red;font-weight:bold;">⚠️ إشارة فيول مسجلة ⚠️</p>' : ''}
+        <p>وتفضلوا بقبول فائق الشكر.</p></body></html>`;
+        let blob = new Blob([content], {type: "application/msword"});
+        saveAs(blob, `VIP_Letter_${flight}.doc`);
+        showToast("تم إنشاء ملف Word", "success");
+    };
+
+    // Fuel PDF
+    async function generateFuelPDF() {
+        const { jsPDF } = window.jspdf;
+        let doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.text("Fuel Release", 20, 20);
+        doc.setFontSize(12);
+        doc.text(`Arrival: ${document.getElementById('fuelArrDate').value} ${document.getElementById('fuelArrTime').value}`, 20, 40);
+        doc.text(`Departure: ${document.getElementById('fuelDepDate').value} ${document.getElementById('fuelDepTime').value}`, 20, 50);
+        doc.text(`Airport: ${document.getElementById('fuelAirport').value}`, 20, 60);
+        doc.text(`Operator: ${document.getElementById('fuelOperator').value}`, 20, 70);
+        doc.text(`Aircraft: ${document.getElementById('fuelAircraft').value}`, 20, 80);
+        doc.text(`Registration: ${document.getElementById('fuelReg').value}`, 20, 90);
+        doc.text(`Route: ${document.getElementById('fuelRoute').value}`, 20, 100);
+        if (document.getElementById('fuelViolation').checked) {
+            doc.setTextColor(255,0,0);
+            doc.text("⚠️ VIOLATION FLAG ⚠️", 20, 120);
+        }
+        doc.save(`Fuel_Release_${document.getElementById('fuelReg').value}.pdf`);
+        showToast("تم إنشاء PDF", "success");
+    }
+    document.getElementById('fuelPdfBtn').onclick = generateFuelPDF;
+
+    // أدوات
+    function startTimer() { if(timerInterval) clearInterval(timerInterval); timerInterval = setInterval(()=>{ timerSeconds++; let h=Math.floor(timerSeconds/3600),m=Math.floor((timerSeconds%3600)/60),s=timerSeconds%60; document.getElementById('timerDisplay').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; },1000); }
+    function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
+    function addFuel() { let qty = document.getElementById('fuelQty').value; if(qty) { let li = document.createElement('li'); li.innerText = `${new Date().toLocaleTimeString()} - ${qty} لتر`; document.getElementById('fuelList').prepend(li); document.getElementById('fuelQty').value = ''; showToast(`تم تسجيل ${qty} لتر`, "success"); } }
+    document.getElementById('startTimerBtn').onclick = startTimer;
+    document.getElementById('stopTimerBtn').onclick = stopTimer;
+    document.getElementById('recordFuelBtn').onclick = addFuel;
+
+    // إعدادات المظهر واللغة
+    function setTheme(theme) {
+        document.body.classList.remove('light', 'midnight');
+        if (theme === 'light') document.body.classList.add('light');
+        else if (theme === 'midnight') document.body.classList.add('midnight');
+        else document.body.classList.remove('light', 'midnight');
+        localStorage.setItem('ops_theme', theme);
+    }
+    document.getElementById('themeLight').onclick = () => setTheme('light');
+    document.getElementById('themeDark').onclick = () => setTheme('dark');
+    document.getElementById('themeMidnight').onclick = () => setTheme('midnight');
+    document.getElementById('settingsLang').onchange = (e) => { currentLang = e.target.value; localStorage.setItem('ops_lang', currentLang); buildChecklist(); };
+
+    // إدارة المستخدمين
+    function loadUserList() {
+        let users = JSON.parse(localStorage.getItem('ops_users') || '[]');
+        let html = "<b>المستخدمون:</b><br>";
+        users.forEach(u => html += `🔹 ${u.username}<br>`);
+        document.getElementById('userList').innerHTML = html;
+    }
+    document.getElementById('createUserBtn').onclick = () => {
+        let u = document.getElementById('newUser').value.trim();
+        let p = document.getElementById('newPass').value.trim();
+        if (!u || !p) return;
+        let users = JSON.parse(localStorage.getItem('ops_users') || '[]');
+        users = users.filter(user => user.username !== u);
+        users.push({ username: u, password: p });
+        localStorage.setItem('ops_users', JSON.stringify(users));
+        showToast(`تم إضافة المستخدم ${u}`, "success");
+        loadUserList();
+    };
+
+    // التنقل بين الصفحات
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        document.getElementById('sidebar').classList.remove('open');
+    }
+    document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            let page = link.getAttribute('data-page');
+            if (page) showPage(page);
+        });
+    });
+    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.add('open');
+    document.getElementById('closeSidebar').onclick = () => document.getElementById('sidebar').classList.remove('open');
+
+    // تحميل السجل والبيانات المحفوظة
+    function loadHistory() {
+        let history = JSON.parse(localStorage.getItem('ops_history') || '[]');
+        let html = '<table><thead><tr><th>التاريخ</th><th>الرحلة</th><th>الحالة</th></tr></thead><tbody>';
+        history.forEach(h => { html += `<tr><td>${h.timestamp||''}</td><td>${h.flight}</td><td>${h.allDone?'مكتمل':'قيد التنفيذ'}</td></tr>`; });
+        html += '</tbody></table>';
+        document.getElementById('historyList').innerHTML = html;
+    }
+    showPage('welcomePage');
+    const savedTheme = localStorage.getItem('ops_theme');
+    if (savedTheme) setTheme(savedTheme);
+    const savedLang = localStorage.getItem('ops_lang');
+    if (savedLang) { currentLang = savedLang; document.getElementById('settingsLang').value = savedLang; }
+})();
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>

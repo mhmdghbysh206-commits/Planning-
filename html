@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>OPS VORTEX – النظام المتكامل (نهائي)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        :root {
+            --bg: #0b1120; --card: #0f172acc; --border: #ffffff20; --accent: #3b82f6;
+            --text: #f1f5f9;
+        }
+        [data-theme="light"] { --bg: #e2e8f0; --card: #ffffffcc; --text: #0f172a; }
+        [data-theme="midnight"] { --bg: #000000; --accent: #f59e0b; --text: #fffbeb; }
+        body { background: var(--bg); color: var(--text); transition: 0.2s; overflow-x: hidden; }
+        .sidebar {
+            position: fixed; top: 0; right: -300px; width: 280px; height: 100%;
+            background: rgba(15,25,45,0.9); backdrop-filter: blur(16px);
+            border-left: 1px solid var(--accent); z-index: 200; transition: 0.3s;
+            padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;
+        }
+        .sidebar.open { right: 0; }
+        .sidebar .close-btn { align-self: flex-end; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text); }
+        .sidebar .nav-item { padding: 0.8rem 1rem; border-radius: 1rem; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .sidebar .nav-item:hover { background: var(--accent); color: white; }
+        .top-nav { background: var(--card); backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 2rem; position: sticky; top: 0; z-index: 150; }
+        .menu-btn { background: var(--accent); border: none; padding: 0.5rem 1rem; border-radius: 2rem; color: white; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .container { max-width: 1400px; margin: 1.5rem auto; padding: 0 1rem; }
+        .glass-card { background: var(--card); backdrop-filter: blur(8px); border-radius: 1.5rem; border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 1.5rem; }
+        .page { display: none; animation: fade 0.2s; }
+        .page.active { display: block; }
+        h2 { font-size: 1.6rem; margin-bottom: 1rem; }
+        .btn-primary, .btn-secondary { border: none; padding: 0.6rem 1.2rem; border-radius: 2rem; font-weight: bold; cursor: pointer; margin: 0.2rem; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-secondary { background: #334155; color: white; }
+        input, select, textarea { width: 100%; padding: 0.6rem; background: #00000030; border: 1px solid var(--border); border-radius: 1rem; color: var(--text); margin-bottom: 0.5rem; }
+        .form-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+        .items-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; margin-top: 1rem; }
+        @media (max-width: 700px) { .items-grid { grid-template-columns: 1fr; } .form-row { flex-direction: column; } }
+        .item-card { background: #00000020; border-radius: 1rem; padding: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; border-left: 4px solid #ef4444; }
+        .status-done { border-left-color: #10b981; background: #10b98110; }
+        .item-card select { width: 100px; } .item-card input { flex: 1; min-width: 120px; }
+        .progress-bar { height: 6px; background: #334155; border-radius: 4px; overflow: hidden; margin: 0.5rem 0; }
+        .progress-fill { height: 100%; width: 0%; background: #10b981; }
+        .attach-list { font-size: 0.8rem; margin-top: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.5rem; grid-column: 1/-1; }
+        .modal { position: fixed; inset: 0; background: #000000cc; backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1100; }
+        .modal-content { background: var(--card); border-radius: 1.5rem; padding: 1.5rem; max-width: 550px; width: 90%; max-height: 80%; overflow-y: auto; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--card); backdrop-filter: blur(12px); padding: 0.7rem 1.2rem; border-radius: 2rem; border-left: 3px solid var(--accent); z-index: 1000; }
+        #loginOverlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .login-box { background: var(--card); padding: 2rem; border-radius: 2rem; width: 360px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; background: #00000020; border-radius: 1rem; overflow: auto; display: block; }
+        th, td { padding: 0.5rem; border-bottom: 1px solid var(--border); text-align: center; }
+        th { background: var(--accent); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .clock { font-family: monospace; font-size: 1.2rem; font-weight: bold; background: #00000060; padding: 5px 12px; border-radius: 30px; backdrop-filter: blur(4px); }
+        .banner-area { background: #00000030; border-radius: 1rem; padding: 0.8rem; margin-bottom: 1rem; text-align: center; }
+        .banner-preview { margin: 10px 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .banner-preview img { max-height: 80px; border-radius: 8px; border: 1px solid var(--accent); }
+        .delete-user-btn, .delete-email-btn, .delete-hotel-btn { background: #e11d48; border: none; border-radius: 1rem; padding: 2px 8px; margin-left: 8px; cursor: pointer; color: white; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; padding: 6px; background: #00000020; border-radius: 1rem; }
+        .email-item { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; padding: 6px; background: #00000020; border-radius: 1rem; }
+    </style>
+</head>
+<body>
+<div id="loginOverlay">
+    <div class="login-box">
+        <i class="fas fa-bolt" style="font-size: 3rem; color: var(--accent);"></i>
+        <h1 id="appTitle">OPS VORTEX</h1>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button class="btn-primary" style="width:100%" onclick="login()" id="loginButton">LOGIN</button>
+    </div>
+</div>
+
+<div id="mainApp" style="display:none;">
+    <div class="sidebar" id="sidebar">
+        <button class="close-btn" id="closeSidebarBtn"><i class="fas fa-times"></i></button>
+        <div class="nav-item" data-page="dashboard"><i class="fas fa-clipboard-list"></i> <span data-i18n="navChecklist">Checklist</span></div>
+        <div class="nav-item" data-page="nma"><i class="fas fa-chart-line"></i> <span data-i18n="navNMA">NMA</span></div>
+        <div class="nav-item" data-page="schedule"><i class="fas fa-table"></i> <span data-i18n="navSchedule">Flight Schedule</span></div>
+        <div class="nav-item" data-page="letter"><i class="fas fa-envelope-open-text"></i> <span data-i18n="navLetter">VIP Letter</span></div>
+        <div class="nav-item" data-page="fuel"><i class="fas fa-gas-pump"></i> <span data-i18n="navFuel">Fuel Release</span></div>
+        <div class="nav-item" data-page="hotel"><i class="fas fa-hotel"></i> <span data-i18n="navHotel">Hotel</span></div>
+        <div class="nav-item" data-page="history"><i class="fas fa-history"></i> <span data-i18n="navHistory">Cloud Log</span></div>
+        <div class="nav-item" data-page="tools"><i class="fas fa-tools"></i> <span data-i18n="navTools">Tools</span></div>
+        <div class="nav-item" data-page="settings"><i class="fas fa-cog"></i> <span data-i18n="navSettings">Settings</span></div>
+    </div>
+    <div class="top-nav">
+        <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i> <span data-i18n="menu">Menu</span></button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span id="opLabel"></span>
+            <select id="langSelector" style="background: var(--card); border:1px solid var(--border); border-radius:2rem; padding:5px 10px;">
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+            </select>
+        </div>
+    </div>
+    <div class="top-bar"><div></div><div class="clock" id="liveClock"></div></div>
+    <div class="container">
+        <!-- Dashboard Checklist -->
+        <div id="dashboard" class="page glass-card">
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+                <h2 data-i18n="checklistTitle">Flight Checklist</h2>
+                <div><button class="btn-secondary" onclick="exportChecklistExcel()" data-i18n="exportExcel"><i class="fas fa-file-excel"></i> Export Excel</button>
+                <button class="btn-secondary" onclick="resetManualChecklist()" data-i18n="newManual"><i class="fas fa-plus"></i> New Manual</button></div>
+            </div>
+            <textarea id="rawInput" data-i18n-placeholder="pasteFlights" placeholder="Paste flight data (e.g., NE200 9K-CAN CAI/KWI DH 08:00 10:35)" rows="2"></textarea>
+            <button class="btn-primary" onclick="parseFlights()" data-i18n="analyzeBtn">Analyze Flights</button>
+            <div id="flightList" style="display:none; margin-top:1rem;"><h3 data-i18n="detectedFlights">Detected Flights</h3><div id="flightsBody"></div></div>
+            <div id="checklistArea" style="display:none; margin-top:1.5rem;"><h3 id="activeFlightTitle"></h3><div class="progress-bar"><div class="progress-fill" id="progFill"></div></div><div id="checklistContainer" class="items-grid"></div><div><button class="btn-primary" onclick="syncToCloud()" data-i18n="saveCloud">Save to Cloud</button><button class="btn-secondary" onclick="clearChecklist()" data-i18n="clear">Clear</button></div></div>
+        </div>
+        <!-- NMA -->
+        <div id="nma" class="page glass-card">
+            <h2 data-i18n="nmaTitle">NMA Cairo Schedule</h2>
+            <div class="upload-area" id="nmaDropZone" style="border:2px dashed var(--border); border-radius:1.5rem; padding:1rem; text-align:center; cursor:pointer; margin-bottom:1rem;"><i class="fas fa-cloud-upload-alt"></i> <span data-i18n="chooseFile">Choose Excel File or Drag & Drop</span><input type="file" id="nmaFileInput" accept=".xlsx, .xls" style="display:none;"><button class="btn-secondary" id="nmaSelectBtn" style="margin-top:10px;" data-i18n="browse">Browse Files</button></div>
+            <div id="nmaStatsBar" style="display:none; justify-content:space-between;"><div><span id="nmaRecordCount">0 Flights</span></div><button class="btn-primary" id="nmaDownloadBtn" data-i18n="downloadExcel">⬇️ Download Processed Excel</button></div>
+            <div id="nmaTableContainer" style="overflow-x:auto; display:none;"><table id="nmaResultTable"><thead><th>#</th><th>Date</th><th>Flight#</th><th>Reg</th><th>ARR</th><th>DEP</th><th>Ground Time</th><th>Route</th><th>Handling</th><th>Remarks</th></thead><tbody id="nmaTableBody"></tbody></td></div>
+            <div id="nmaEmptyState" style="text-align:center; padding:2rem;" data-i18n="waitingFile">⏳ Waiting for schedule file...</div>
+        </div>
+        <!-- Flight Schedule -->
+        <div id="schedule" class="page glass-card">
+            <h2 data-i18n="scheduleTitle">Flight Schedule</h2>
+            <textarea id="scheduleInput" rows="4" placeholder="Date|Arln|Flight#|REG|STA|STD|GRND|Route|Hndl ng"></textarea>
+            <button class="btn-primary" onclick="updateScheduleFromText()" data-i18n="updateSchedule">Update Schedule</button>
+            <div id="scheduleTableContainer" style="overflow-x:auto;"></div>
+            <button class="btn-secondary" onclick="exportScheduleExcel()" data-i18n="exportSchedule">Export Excel</button>
+        </div>
+        <!-- VIP Letter -->
+        <div id="letter" class="page glass-card">
+            <h2 data-i18n="vipTitle">VIP Official Letter (Word)</h2>
+            <div id="vipBannersContainer"></div>
+            <div class="form-row"><div><label data-i18n="flightNumber">Flight Number</label><input id="vipFlight"></div><div><label data-i18n="registration">Registration</label><input id="vipReg"></div><div><label data-i18n="route">Route</label><input id="vipRoute"></div><div><label data-i18n="aircraftType">Aircraft Type</label><select id="vipAircraftSelect"><option value="">-- Select --</option><option value="Cessna 172">Cessna 172</option><option value="Piper PA-28">Piper PA-28</option><option value="Cirrus SR22">Cirrus SR22</option><option value="Beechcraft Baron">Beechcraft Baron</option><option value="Daher TBM 910">Daher TBM 910</option><option value="Pilatus PC-12">Pilatus PC-12</option><option value="HondaJet HA-420">HondaJet HA-420</option><option value="Embraer Phenom 300">Embraer Phenom 300</option><option value="Gulfstream G650">Gulfstream G650</option><option value="Bombardier Global 7500">Bombardier Global 7500</option><option value="Boeing 737">Boeing 737</option><option value="Airbus A320">Airbus A320</option><option value="Other">Other</option></select><input type="text" id="vipAircraftOther" placeholder="Aircraft type" style="display:none;"></div></div>
+            <div class="form-row"><div><label data-i18n="arrivalDate">Arrival Date</label><input type="text" id="vipArrDate" class="datepicker"></div><div><label data-i18n="arrivalTime">Arrival Time</label><input type="text" id="vipArrTime" class="timepicker" placeholder="HH:MM"></div><div><label data-i18n="departureDate">Departure Date</label><input type="text" id="vipDepDate" class="datepicker"></div><div><label data-i18n="departureTime">Departure Time</label><input type="text" id="vipDepTime" class="timepicker" placeholder="HH:MM"></div></div>
+            <div class="form-row"><div><label data-i18n="crewCount">Crew Count</label><input id="vipCrew" type="number" value="5"></div><div><label data-i18n="passengers">Passengers</label><input id="vipPax" type="number" value="2"></div><div><label data-i18n="clearanceNumber">Clearance Number</label><input id="vipClearance" value="145636"></div></div>
+            <textarea id="vipDelegation" rows="2" data-i18n-placeholder="delegationDesc" placeholder="Delegation description..."></textarea>
+            <div><input type="checkbox" id="vipViolation"> <span data-i18n="violationFlag">Add violation flag</span></div>
+            <button class="btn-primary" id="generateWordBtn" data-i18n="generateWord">Generate Word Document</button>
+        </div>
+        <!-- Fuel Release -->
+        <div id="fuel" class="page glass-card">
+            <h2 data-i18n="fuelTitle">Fuel Release (PDF)</h2>
+            <div class="form-row">
+                <div><label data-i18n="flightDate">Flight date</label><input type="text" id="fuelDate" placeholder="e.g., 28APR26"></div>
+                <div><label data-i18n="airport">Airport (ICAO)</label>
+                    <select id="fuelAirportSelect">
+                        <option value="">-- Select --</option>
+                        <option value="HECA">HECA - Cairo</option>
+                        <option value="HECP">HECP - Cairo West</option>
+                        <option value="HEGN">HEGN - Hurghada</option>
+                        <option value="HESH">HESH - Sharm El Sheikh</option>
+                        <option value="HEBA">HEBA - Borg El Arab</option>
+                        <option value="HELX">HELX - Luxor</option>
+                        <option value="HEMM">HEMM - Marsa Matruh</option>
+                        <option value="HEAT">HEAT - Asyut</option>
+                        <option value="HEAR">HEAR - Aswan</option>
+                        <option value="HEMK">HEMK - Mersa Alam</option>
+                        <option value="HEPS">HEPS - Port Said</option>
+                        <option value="HESC">HESC - St. Catherine</option>
+                        <option value="HETB">HETB - Taba</option>
+                        <option value="HEAZ">HEAZ - El Alamein</option>
+                        <option value="HEBL">HEBL - Abu Simbel</option>
+                        <option value="HEIS">HEIS - El Kharga</option>
+                        <option value="HEKG">HEKG - El Dakhla</option>
+                        <option value="HEOW">HEOW - Siwa</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <div id="otherAirportDiv" style="display:none; margin-top:5px;"><input type="text" id="fuelAirportOther" placeholder="Enter ICAO code"></div>
+                </div>
+                <div><label data-i18n="carrier">Carrier/operator</label><input id="fuelOperator" placeholder="e.g., AHMED FAHAD"></div>
+            </div>
+            <div class="form-row">
+                <div><label data-i18n="aircraftType">Aircraft type</label>
+                    <select id="fuelAircraftSelect">
+                        <option value="">-- Select --</option>
+                        <option value="Cessna 172">Cessna 172</option>
+                        <option value="Piper PA-28">Piper PA-28</option>
+                        <option value="Cirrus SR22">Cirrus SR22</option>
+                        <option value="Beechcraft Baron">Beechcraft Baron</option>
+                        <option value="Daher TBM 910">Daher TBM 910</option>
+                        <option value="Pilatus PC-12">Pilatus PC-12</option>
+                        <option value="HondaJet HA-420">HondaJet HA-420</option>
+                        <option value="Embraer Phenom 300">Embraer Phenom 300</option>
+                        <option value="Gulfstream G650">Gulfstream G650</option>
+                        <option value="Bombardier Global 7500">Bombardier Global 7500</option>
+                        <option value="Boeing 737">Boeing 737</option>
+                        <option value="Airbus A320">Airbus A320</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <div id="otherAircraftDiv" style="display:none; margin-top:5px;"><input type="text" id="fuelAircraftOther" placeholder="Enter aircraft type"></div>
+                </div>
+                <div><label data-i18n="registration">Registration</label><input id="fuelReg" placeholder="e.g., N300AE"></div>
+                <div><label data-i18n="route">Flight route</label><input id="fuelRoute" placeholder="e.g., LDZD-HECP-OEGS"></div>
+            </div>
+            <div><input type="checkbox" id="fuelViolationFlag"> <span data-i18n="violationFlag">Add Violation flag (red)</span></div>
+            <button class="btn-primary" id="generateFuelPdfBtn" data-i18n="downloadPdf">Download PDF</button>
+            <button class="btn-primary" id="openEmailDraftBtn" style="display:none; background:#10b981; margin-top:10px;" data-i18n="openEmail">Open Email Draft</button>
+        </div>
+        <!-- Hotel Management -->
+        <div id="hotel" class="page glass-card">
+            <h2 data-i18n="hotelTitle">🏨 Hotel Management</h2>
+            <div class="form-row">
+                <div><label data-i18n="hotelName">Hotel Name</label><input id="hotelName" placeholder="e.g., Marriott Cairo"></div>
+                <div><label data-i18n="roomNumber">Room Number</label><input id="hotelRoom" placeholder="e.g., 205"></div>
+                <div><label data-i18n="guestName">Guest Name</label><input id="hotelGuest" placeholder="Crew / VIP name"></div>
+            </div>
+            <div class="form-row">
+                <div><label data-i18n="checkin">Check-in Date</label><input type="text" id="hotelCheckin" class="datepicker" placeholder="YYYY-MM-DD"></div>
+                <div><label data-i18n="checkout">Check-out Date</label><input type="text" id="hotelCheckout" class="datepicker" placeholder="YYYY-MM-DD"></div>
+                <div><label data-i18n="hotelNotes">Notes</label><input id="hotelNotes" placeholder="Special requests"></div>
+            </div>
+            <button class="btn-primary" id="addHotelBtn" data-i18n="addHotel">Add Reservation</button>
+            <div style="margin-top: 1.5rem;"><h3 data-i18n="hotelList">Reservations List</h3><div id="hotelListContainer" style="overflow-x:auto;"><table id="hotelTable"><thead><th data-i18n="hotelName">Hotel</th><th data-i18n="roomNumber">Room</th><th data-i18n="guestName">Guest</th><th data-i18n="checkin">Check-in</th><th data-i18n="checkout">Check-out</th><th data-i18n="notes">Notes</th><th data-i18n="actions">Actions</th></thead><tbody id="hotelTableBody"></tbody></table></div></div>
+        </div>
+        <!-- Cloud Log -->
+        <div id="history" class="page glass-card">
+            <h2 data-i18n="cloudLog">Cloud Log (Firestore)</h2>
+            <input type="text" id="historyFilter" data-i18n-placeholder="search" placeholder="Search..." onkeyup="filterHistory()" style="margin-bottom:1rem;">
+            <div style="overflow-x:auto;"><table id="historyTable"><thead><th data-i18n="date">Date</th><th data-i18n="flight">Flight</th><th data-i18n="reg">Reg</th><th data-i18n="type">Type</th><th data-i18n="status">Status</th><th data-i18n="user">User</th><th data-i18n="actions">Actions</th></thead><tbody id="historyBody"></tbody></table></div>
+        </div>
+        <!-- Tools -->
+        <div id="tools" class="page glass-card">
+            <h2 data-i18n="toolsTitle">Tools</h2>
+            <button class="btn-secondary" onclick="startTimer()" data-i18n="startTimer">Start Timer</button> <span id="timerDisplay">00:00:00</span> <button class="btn-secondary" onclick="stopTimer()" data-i18n="stopTimer">Stop</button><br>
+            <input type="number" id="fuelQtyTool" data-i18n-placeholder="fuelQty" placeholder="Fuel (L)"> <button class="btn-primary" onclick="addFuel()" data-i18n="recordFuel">Record</button>
+            <ul id="fuelList"></ul>
+        </div>
+        <!-- Settings -->
+        <div id="settings" class="page glass-card">
+            <h2 data-i18n="settingsTitle">Settings</h2>
+            <button class="btn-secondary" onclick="setTheme('light')" data-i18n="light">Light</button>
+            <button class="btn-secondary" onclick="setTheme('dark')" data-i18n="dark">Dark</button>
+            <button class="btn-secondary" onclick="setTheme('midnight')" data-i18n="midnight">Midnight</button>
+            <div id="adminBannerPanel" style="display:none; margin-top:1rem;"><h3>Banner Management (Admin only)</h3><div><label>Top Banner</label><input type="file" id="topBannerUpload" accept="image/*"><div id="topBannerPreview"></div><button id="clearTopBannerBtn" class="btn-secondary">Clear</button></div><div><label>Bottom Banner</label><input type="file" id="bottomBannerUpload" accept="image/*"><div id="bottomBannerPreview"></div><button id="clearBottomBannerBtn" class="btn-secondary">Clear</button></div></div>
+            <div id="adminPanel" style="display:none; margin-top:1rem;"><h3>User Management</h3><input id="newUser" placeholder="Username"><input id="newPass" type="password" placeholder="Password"><button class="btn-primary" onclick="createUser()">Create/Update</button><div id="userList"></div></div>
+            <div id="emailAdminPanel" style="display:none; margin-top:1rem;"><h3>Email Recipients Management (Admin only)</h3><div class="form-row"><div style="flex:1"><input type="email" id="newEmail" placeholder="new@example.com"></div><div><button class="btn-primary" id="addEmailBtn">Add Email</button></div></div><div id="emailList"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --------------------------------------------------------------
+// FIREBASE CONFIGURATION (استخدم بيانات مشروعك)
+// --------------------------------------------------------------
+const firebaseConfig = {
+    apiKey: "AIzaSyAMs5A2t0tx_q1U_CUtS4NbMP2ELfEozXw",
+    authDomain: "ops-system-pro.firebaseapp.com",
+    projectId: "ops-system-pro",
+    storageBucket: "ops-system-pro.appspot.com",
+    appId: "1:197480388481:web:66aacf19a6ba4878897a80"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// --------------------------------------------------------------
+// GLOBALS
+// --------------------------------------------------------------
+let currentUser = "", currentUserRole = "user", currentLang = localStorage.getItem('ops_lang') || 'en';
+let activeFlight = { flight: "", reg: "", type: "", airline: "", arrTime: "", depTime: "" };
+let attachments = {}, editingDocId = null, allFlightsData = [], timerInterval = null, timerSeconds = 0;
+let storedTopBannerURL = null, storedBottomBannerURL = null, nmaProcessedData = [];
+let generatedPDFBlob = null, lastPDFFileName = "";
+
+// --------------------------------------------------------------
+// TRANSLATIONS (مدمجة)
+// --------------------------------------------------------------
+const translations = {
+    en: {
+        navChecklist: "Checklist", navNMA: "NMA", navSchedule: "Flight Schedule", navLetter: "VIP Letter", navFuel: "Fuel Release", navHotel: "Hotel", navHistory: "Cloud Log", navTools: "Tools", navSettings: "Settings",
+        menu: "Menu", checklistTitle: "Flight Checklist", exportExcel: "Export Excel", newManual: "New Manual", pasteFlights: "Paste flight data...", analyzeBtn: "Analyze Flights", detectedFlights: "Detected Flights",
+        flight: "Flight", reg: "Reg", type: "Type", arrival: "Arrival", departure: "Departure", saveCloud: "Save to Cloud", clear: "Clear",
+        nmaTitle: "NMA Cairo Schedule", chooseFile: "Choose Excel File or Drag & Drop", browse: "Browse Files", downloadExcel: "Download Processed Excel", waitingFile: "Waiting for schedule file...",
+        scheduleTitle: "Flight Schedule", updateSchedule: "Update Schedule", exportSchedule: "Export Excel",
+        vipTitle: "VIP Official Letter (Word)", flightNumber: "Flight Number", registration: "Registration", route: "Route", aircraftType: "Aircraft Type", arrivalDate: "Arrival Date", arrivalTime: "Arrival Time", departureDate: "Departure Date", departureTime: "Departure Time", crewCount: "Crew Count", passengers: "Passengers", clearanceNumber: "Clearance Number", delegationDesc: "Delegation description...", violationFlag: "Add violation flag", generateWord: "Generate Word Document",
+        fuelTitle: "Fuel Release (PDF)", flightDate: "Flight date", airport: "Airport (ICAO)", carrier: "Carrier/operator", downloadPdf: "Download PDF", openEmail: "Open Email Draft",
+        hotelTitle: "Hotel Management", hotelName: "Hotel Name", roomNumber: "Room Number", guestName: "Guest Name", checkin: "Check-in Date", checkout: "Check-out Date", hotelNotes: "Notes", addHotel: "Add Reservation", hotelList: "Reservations List", actions: "Actions",
+        cloudLog: "Cloud Log (Firestore)", search: "Search...", date: "Date", status: "Status", user: "User", actions: "Actions",
+        toolsTitle: "Tools", startTimer: "Start Timer", stopTimer: "Stop", fuelQty: "Fuel (L)", recordFuel: "Record",
+        settingsTitle: "Settings", light: "Light", dark: "Dark", midnight: "Midnight",
+        pending: "Pending", done: "Done", notes: "Notes", upload: "Upload", close: "Close", noAttach: "No attachments"
+    },
+    ar: {
+        navChecklist: "قائمة المتابعة", navNMA: "إن إم إيه", navSchedule: "جدول الرحلات", navLetter: "خطاب في آي بي", navFuel: "إشعار وقود", navHotel: "فندق", navHistory: "سجل السحابة", navTools: "أدوات", navSettings: "إعدادات",
+        menu: "القائمة", checklistTitle: "قائمة متابعة الرحلات", exportExcel: "تصدير إكسل", newManual: "قائمة جديدة", pasteFlights: "الصق بيانات الرحلات...", analyzeBtn: "تحليل الرحلات", detectedFlights: "الرحلات المكتشفة",
+        flight: "الرحلة", reg: "التسجيل", type: "النوع", arrival: "وصول", departure: "مغادرة", saveCloud: "حفظ في السحابة", clear: "مسح",
+        nmaTitle: "جدول القاهرة - NMA", chooseFile: "اختر ملف إكسل أو أسحقه", browse: "تصفح الملفات", downloadExcel: "تحميل ملف إكسل المعالج", waitingFile: "⏳ ينتظر ملف الجدول...",
+        scheduleTitle: "جدول الرحلات", updateSchedule: "تحديث الجدول", exportSchedule: "تصدير إكسل",
+        vipTitle: "خطاب رسمي لكبار الشخصيات (Word)", flightNumber: "رقم الرحلة", registration: "التسجيل", route: "خط السير", aircraftType: "طراز الطائرة", arrivalDate: "تاريخ الوصول", arrivalTime: "وقت الوصول", departureDate: "تاريخ المغادرة", departureTime: "وقت المغادرة", crewCount: "عدد الطاقم", passengers: "عدد الركاب", clearanceNumber: "رقم التصديق", delegationDesc: "وصف الوفد...", violationFlag: "إضافة إشارة مخالفة", generateWord: "إنشاء ملف وورد",
+        fuelTitle: "إشعار وقود (PDF)", flightDate: "تاريخ الرحلة", airport: "المطار (ICAO)", carrier: "الناقل / المشغل", downloadPdf: "تحميل ملف PDF", openEmail: "فتح البريد الإلكتروني",
+        hotelTitle: "إدارة الفندق", hotelName: "اسم الفندق", roomNumber: "رقم الغرفة", guestName: "اسم الضيف", checkin: "تاريخ الوصول", checkout: "تاريخ المغادرة", hotelNotes: "ملاحظات", addHotel: "إضافة حجز", hotelList: "قائمة الحجوزات", actions: "إجراءات",
+        cloudLog: "سجل السحابة (Firestore)", search: "بحث...", date: "التاريخ", status: "الحالة", user: "المستخدم", actions: "إجراءات",
+        toolsTitle: "أدوات", startTimer: "بدء المؤقت", stopTimer: "إيقاف", fuelQty: "الوقود (لتر)", recordFuel: "تسجيل",
+        settingsTitle: "الإعدادات", light: "فاتح", dark: "داكن", midnight: "ليلي",
+        pending: "⏳ قيد الانتظار", done: "✅ منجز", notes: "ملاحظات", upload: "رفع", close: "إغلاق", noAttach: "لا توجد مرفقات"
+    }
+};
+function t(key) { return translations[currentLang][key] || key; }
+function applyLanguage() {
+    document.querySelectorAll('[data-i18n]').forEach(el => el.innerText = t(el.getAttribute('data-i18n')));
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => el.placeholder = t(el.getAttribute('data-i18n-placeholder')));
+    if (document.getElementById('openEmailDraftBtn')) document.getElementById('openEmailDraftBtn').innerText = t('openEmail');
+    if (document.getElementById('checklistArea') && document.getElementById('checklistArea').style.display === 'block') buildChecklist();
+}
+function setLanguage(lang) { currentLang = lang; localStorage.setItem('ops_lang', lang); applyLanguage(); }
+document.getElementById('langSelector').addEventListener('change', e => setLanguage(e.target.value));
+
+// --------------------------------------------------------------
+// CLOCK 24H + UTC
+// --------------------------------------------------------------
+function updateClock() {
+    const now = new Date();
+    const local24 = now.toLocaleTimeString('en-GB', { hour12: false });
+    const utc = now.toUTCString().split(' ')[4];
+    document.getElementById('liveClock').innerHTML = `🕘 ${local24} | 🌍 ${utc} UTC`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// --------------------------------------------------------------
+// FLATPICKR 24H
+// --------------------------------------------------------------
+function initTimePickers() {
+    document.querySelectorAll('.timepicker').forEach(i => { if (i._flatpickr) i._flatpickr.destroy(); flatpickr(i, { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true }); });
+    document.querySelectorAll('.datepicker').forEach(i => { if (i._flatpickr) i._flatpickr.destroy(); flatpickr(i, { dateFormat: "Y-m-d" }); });
+}
+function reinitTimePickersIfNeeded() {
+    const id = document.querySelector('.page.active')?.id;
+    if (id === 'fuel' || id === 'letter' || id === 'hotel') setTimeout(initTimePickers, 50);
+}
+window.showPage = function(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    document.getElementById('sidebar').classList.remove('open');
+    reinitTimePickersIfNeeded();
+};
+
+// --------------------------------------------------------------
+// INDEXEDDB FOR ATTACHMENTS
+// --------------------------------------------------------------
+let idbReady = false, DB_NAME = 'OpsAttachments', STORE_NAME = 'files';
+function initIDB() { return new Promise(resolve => { if(idbReady) return resolve(true); const req = indexedDB.open(DB_NAME, 1); req.onupgradeneeded = e => { let db = e.target.result; if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'key' }); }; req.onsuccess = () => { idbReady = true; resolve(true); }; req.onerror = () => resolve(false); }); }
+async function storeBlob(key, blob) { await initIDB(); const db = await new Promise(r => { let req = indexedDB.open(DB_NAME); req.onsuccess = () => r(req.result); }); const tx = db.transaction(STORE_NAME, 'readwrite'); await tx.store.put({ key, data: blob }); }
+async function getBlob(key) { await initIDB(); const db = await new Promise(r => { let req = indexedDB.open(DB_NAME); req.onsuccess = () => r(req.result); }); const tx = db.transaction(STORE_NAME, 'readonly'); const res = await tx.store.get(key); return res ? res.data : null; }
+async function deleteBlob(key) { await initIDB(); const db = await new Promise(r => { let req = indexedDB.open(DB_NAME); req.onsuccess = () => r(req.result); }); const tx = db.transaction(STORE_NAME, 'readwrite'); await tx.store.delete(key); }
+
+// --------------------------------------------------------------
+// CHECKLIST (23 items + attachments)
+// --------------------------------------------------------------
+const allItems = ["Fuel","Catering","Transfer","FPL Check","HOTAC","VIP Lounge","Visa","Explosive Trace Detection","Disinfection Spray Cans","Operation Hall Name","GSC","ZAS Involvement","POCs","Weather Folder","GDs / PNLs","Pax In & Pax Out","MIA","G.I.S","National Security","Ports Security","Immigration","Operations Sector","Russian Committee"];
+function cleanId(s) { return s.replace(/[^a-z0-9]/gi, '').toLowerCase(); }
+
+function buildChecklist() {
+    const container = document.getElementById('checklistContainer'); if(!container) return;
+    container.innerHTML = '';
+    const groups = { "Flight Safety": ["Fuel","FPL Check","Weather Folder","GDs / PNLs"], "Logistics": ["Catering","Transfer","HOTAC","VIP Lounge","Disinfection Spray Cans","Operation Hall Name"], "Security": ["Explosive Trace Detection","National Security","Ports Security","Immigration","Russian Committee","ZAS Involvement"], "Administration": ["Visa","GSC","POCs","Pax In & Pax Out","MIA","G.I.S","Operations Sector"] };
+    const pendingText = t('pending'), doneText = t('done'), notesText = t('notes');
+    for (let [cat, items] of Object.entries(groups)) {
+        let catDiv = document.createElement('div'); catDiv.style.gridColumn = "1/-1"; catDiv.style.marginTop = "10px"; catDiv.style.fontWeight = "bold";
+        catDiv.innerHTML = `<i class="fas fa-folder-open"></i> ${cat}`; container.appendChild(catDiv);
+        items.forEach(name => {
+            const id = cleanId(name);
+            const card = document.createElement('div'); card.className = "item-card"; card.id = `card_${id}`;
+            card.innerHTML = `<label style="min-width:100px;">${name}</label><select id="s_${id}" class="item-status" onchange="updateItemStatus('${id}')"><option value="Pending">${pendingText}</option><option value="Done">${doneText}</option></select><input id="n_${id}" class="item-note" placeholder="${notesText}" style="flex:1;"><button class="btn-secondary" style="padding:4px 8px;" onclick="openAttachModal('${id}','${name}')"><i class="fas fa-paperclip"></i></button>`;
+            container.appendChild(card);
+            const attachDiv = document.createElement('div'); attachDiv.id = `attachList_${id}`; attachDiv.className = "attach-list"; container.appendChild(attachDiv);
+        });
+    }
+    loadLocalDraft(); updateProgress(); attachKeyboardNav();
+}
+function attachKeyboardNav() { const fields = [...document.querySelectorAll('.item-status, .item-note')]; fields.forEach((f,i) => { f.removeEventListener('keydown', navHandler); f.addEventListener('keydown', (e) => navHandler(e,i,fields)); }); }
+function navHandler(e,idx,fields) { if(e.key === 'ArrowDown') { e.preventDefault(); if(fields[idx+1]) fields[idx+1].focus(); } else if(e.key === 'ArrowUp') { e.preventDefault(); if(fields[idx-1]) fields[idx-1].focus(); } }
+function updateItemStatus(id) { let sel = document.getElementById(`s_${id}`); if(sel) { document.getElementById(`card_${id}`).className = `item-card ${sel.value === 'Done' ? 'status-done' : ''}`; updateProgress(); saveLocalDraft(); } }
+function updateProgress() { let done = allItems.filter(n => document.getElementById(`s_${cleanId(n)}`)?.value === 'Done').length; document.getElementById('progFill').style.width = (done/allItems.length)*100 + '%'; }
+async function refreshAttachUI() {
+    for (let n of allItems) {
+        let id = cleanId(n);
+        let container = document.getElementById(`attachList_${id}`);
+        if (!container) continue;
+        let files = attachments[id] || [];
+        if (files.length === 0) { container.innerHTML = ''; continue; }
+        let html = '';
+        for (let f of files) {
+            if (f.dataURL) { html += `<a href="${f.dataURL}" download="${f.name}" style="margin-left:8px;">📎 ${f.name}</a>`; }
+            else { html += `<span style="margin-left:8px;">📎 ${f.name}</span>`; }
+        }
+        container.innerHTML = html;
+    }
+}
+let currentAttachId = null;
+function openAttachModal(itemId, itemName) {
+    if (document.getElementById('attachModal')) closeModal();
+    currentAttachId = itemId;
+    let files = attachments[itemId] || [];
+    let listHtml = '';
+    for (let i=0; i<files.length; i++) {
+        let f = files[i];
+        let previewUrl = f.dataURL || '#';
+        listHtml += `<div class="file-item"><span>📄 ${f.name}</span><div>${f.dataURL ? `<a href="${previewUrl}" download="${f.name}" style="margin-right:10px;">Download</a>` : ''}<button class="remove-attach-btn" data-idx="${i}" style="background:#e11d48; border:none; border-radius:1rem; padding:2px 8px; cursor:pointer;">Delete</button></div></div>`;
+    }
+    let modalHtml = `<div id="attachModal" class="modal"><div class="modal-content"><h3>📎 Attachments: ${itemName}</h3><input type="file" id="attachInput" multiple><button class="btn-primary" id="uploadAttachBtn">${t('upload')}</button><div id="attachListModal">${listHtml || '<p>'+t('noAttach')+'</p>'}</div><button class="btn-secondary" id="closeModalBtn">${t('close')}</button></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.getElementById('uploadAttachBtn').onclick = () => uploadAttach();
+    document.getElementById('closeModalBtn').onclick = () => closeModal();
+    document.querySelectorAll('.remove-attach-btn').forEach(btn => { btn.onclick = async (e) => { let idx = parseInt(btn.getAttribute('data-idx')); await removeAttach(currentAttachId, idx); }; });
+}
+async function uploadAttach() {
+    let input = document.getElementById('attachInput');
+    if (!input.files.length) return;
+    let files = Array.from(input.files);
+    let itemId = currentAttachId;
+    if (!attachments[itemId]) attachments[itemId] = [];
+    for (let file of files) {
+        const dataURL = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target.result); reader.readAsDataURL(file); });
+        attachments[itemId].push({ name: file.name, dataURL: dataURL });
+    }
+    saveLocalDraft();
+    refreshAttachUI();
+    closeModal();
+    openAttachModal(itemId, document.querySelector(`label[for="s_${itemId}"]`)?.innerText || '');
+    showToast(`Uploaded ${files.length} file(s)`);
+}
+async function removeAttach(itemId, idx) {
+    if (!confirm('Delete attachment?')) return;
+    attachments[itemId].splice(idx,1);
+    if (attachments[itemId].length === 0) delete attachments[itemId];
+    saveLocalDraft();
+    refreshAttachUI();
+    closeModal();
+    openAttachModal(itemId, document.querySelector(`label[for="s_${itemId}"]`)?.innerText || '');
+}
+function closeModal() { let modal = document.getElementById('attachModal'); if (modal) modal.remove(); }
+function saveLocalDraft() {
+    if (!activeFlight.flight) return;
+    let draft = { flight: activeFlight, items: {} };
+    for (let n of allItems) { let id = cleanId(n); draft.items[n] = { status: document.getElementById(`s_${id}`)?.value || "Pending", note: document.getElementById(`n_${id}`)?.value || "" }; }
+    let attachCopy = {};
+    for (let id in attachments) { attachCopy[id] = attachments[id].map(f => ({ name: f.name, dataURL: f.dataURL })); }
+    draft.attachments = attachCopy;
+    localStorage.setItem(`draft_${activeFlight.flight}`, JSON.stringify(draft));
+}
+function loadLocalDraft() {
+    let key = `draft_${activeFlight.flight}`;
+    let saved = localStorage.getItem(key);
+    if (saved) {
+        let data = JSON.parse(saved);
+        if (data.flight) activeFlight = data.flight;
+        attachments = {};
+        if (data.attachments) { for (let id in data.attachments) attachments[id] = data.attachments[id]; }
+        for (let n of allItems) { let id = cleanId(n); if (data.items && data.items[n]) { let sel = document.getElementById(`s_${id}`); if (sel) sel.value = data.items[n].status; let note = document.getElementById(`n_${id}`); if (note) note.value = data.items[n].note; updateItemStatus(id); } }
+        refreshAttachUI();
+    } else { attachments = {}; }
+}
+
+// Checklist helper functions
+function parseFlights() {
+    let text = document.getElementById('rawInput').value.toUpperCase();
+    let flights = [];
+    text.split('\n').forEach(line => {
+        if(line.trim().length<5) return;
+        let flight = (line.match(/[A-Z0-9]{2,4}\s?\d{2,5}/)||["UNK"])[0];
+        let reg = (line.match(/[A-Z0-9]{2,5}-[A-Z0-9]{2,5}/)||["TBA"])[0];
+        let type = line.includes("TA")?"TA":(line.includes("AH")?"AH":"DH");
+        let times = line.match(/\b\d{2}:\d{2}\b/g)||[];
+        let arr="", dep="";
+        if(times.length>=2) { dep=times[0]; arr=times[1]; }
+        else if(times.length===1) { if(type==="AH") arr=times[0]; else dep=times[0]; }
+        flights.push({ flight, reg, type, arr, dep });
+    });
+    let tbody = document.getElementById('flightsBody');
+    tbody.innerHTML = '';
+    flights.forEach(f => {
+        tbody.innerHTML += `<tr>
+            <td>${f.flight}</td>
+            <td>${f.reg}</td>
+            <td>${f.type}</td>
+            <td>${f.arr||'--'}</td>
+            <td>${f.dep||'--'}</td>
+            <td><button class="btn-secondary" onclick="selectFlight('${f.flight}','${f.reg}','${f.type}','${f.arr}','${f.dep}')">${t('analyzeBtn')}</button></td>
+        </tr>`;
+    });
+    document.getElementById('flightList').style.display = 'block';
+    allFlightsData = flights;
+    displayScheduleTable(flights);
+}
+function selectFlight(flt,reg,type,arr,dep) {
+    activeFlight = { flight: flt, reg, type, airline: "NMA", arrTime: arr, depTime: dep };
+    editingDocId = null;
+    document.getElementById('checklistArea').style.display = 'block';
+    document.getElementById('activeFlightTitle').innerHTML = `✈️ ${flt} (${reg}) | ${type} | ${t('arrival')} ${arr} ${t('departure')} ${dep}`;
+    buildChecklist();
+}
+function resetManualChecklist() {
+    activeFlight = { flight: "MANUAL_"+Date.now(), reg: "N/A", type: "---", airline: "CUSTOM", arrTime: "", depTime: "" };
+    editingDocId = null;
+    attachments = {};
+    document.getElementById('checklistArea').style.display = 'block';
+    document.getElementById('activeFlightTitle').innerHTML = t('checklistTitle') + " (Manual)";
+    buildChecklist();
+}
+function clearChecklist() { document.getElementById('checklistArea').style.display = 'none'; editingDocId = null; attachments = {}; activeFlight = { flight: "", reg: "", type: "", airline: "", arrTime: "", depTime: "" }; }
+function exportChecklistExcel() { if(!activeFlight.flight) { showToast("No active flight"); return; } let rows = [[t('flight'), activeFlight.flight], [t('reg'), activeFlight.reg], [t('type'), activeFlight.type], [t('arrival'), activeFlight.arrTime], [t('departure'), activeFlight.depTime], [], [t('checklistTitle'), "Status","Notes","Attachments"]]; for(let n of allItems){ let id=cleanId(n); rows.push([n, document.getElementById(`s_${id}`)?.value, document.getElementById(`n_${id}`)?.value, (attachments[id]||[]).map(a=>a.name).join("; ")]); } let ws = XLSX.utils.aoa_to_sheet(rows); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Checklist"); XLSX.writeFile(wb, `Checklist_${activeFlight.flight}.xlsx`); showToast("Exported"); }
+async function syncToCloud() { if(!db) { showToast("Cloud unavailable, saved locally"); saveLocalDraft(); return; } if(!activeFlight.flight) activeFlight.flight = "MANUAL_"+Date.now(); let itemsData = {}; for(let n of allItems){ let id=cleanId(n); itemsData[n] = { status: document.getElementById(`s_${id}`)?.value || "Pending", note: document.getElementById(`n_${id}`)?.value || "", attachments: attachments[id] || [] }; } let allDone = Object.values(itemsData).every(i => i.status === "Done"); let flightData = { flight: activeFlight.flight, reg: activeFlight.reg, type: activeFlight.type, airline: activeFlight.airline, arrTime: activeFlight.arrTime, depTime: activeFlight.depTime, items: itemsData, allDone, user: currentUser, timestamp: new Date().toLocaleString(), serverTime: firebase.firestore.FieldValue.serverTimestamp() }; try { if(editingDocId) await db.collection("flights_cloud").doc(editingDocId).set(flightData); else await db.collection("flights_cloud").add(flightData); showToast("Saved to cloud ✅"); clearChecklist(); loadHistory(); } catch(e) { showToast("Cloud error: "+e.message); saveLocalDraft(); } }
+
+// --------------------------------------------------------------
+// FLIGHT SCHEDULE
+// --------------------------------------------------------------
+function displayScheduleTable(flights) { let html = `<table><thead><th>${t('flight')}</th><th>${t('reg')}</th><th>${t('type')}</th><th>${t('arrival')}</th><th>${t('departure')}</th></thead><tbody>`; flights.forEach(f => { html += `<tr>
+        <td>${f.flight||''}</td>
+        <td>${f.reg||''}</td>
+        <td>${f.type||''}</td>
+        <td>${f.arr||''}</td>
+        <td>${f.dep||''}</td>
+    </tr>`; }); html += `</tbody>｜｜DSML｜｜`; document.getElementById('scheduleTableContainer').innerHTML = html; }
+function updateScheduleFromText() { let text = document.getElementById('scheduleInput').value; let flights = []; text.split('\n').forEach(line => { let parts = line.split(/\t|,|\|/); if(parts.length >= 5) flights.push({ flight: parts[2]?.trim(), reg: parts[3]?.trim(), type: parts[8]?.trim(), arr: parts[5]?.trim(), dep: parts[4]?.trim() }); }); if(flights.length) displayScheduleTable(flights); else showToast("No valid data"); }
+function exportScheduleExcel() { let rows = [[t('flight'), t('reg'), t('type'), t('arrival'), t('departure')]]; allFlightsData.forEach(f => rows.push([f.flight, f.reg, f.type, f.arr, f.dep])); if(rows.length===1) { showToast("No data"); return; } let ws = XLSX.utils.aoa_to_sheet(rows); let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "FlightSchedule"); XLSX.writeFile(wb, "Flight_Schedule.xlsx"); showToast("Exported"); }
+
+// --------------------------------------------------------------
+// NMA (FULL ORIGINAL)
+// --------------------------------------------------------------
+function formatTimeNMA(val) {
+    if (val === null || val === undefined || val === "" || String(val).toLowerCase() === "nan") return "";
+    if (typeof val === 'number') { const date = XLSX.SSF.parse_date_code(val); return `${String(date.H).padStart(2,'0')}:${String(date.M).padStart(2,'0')}`; }
+    const str = String(val).trim();
+    if (str.includes(":")) { const parts = str.split(":"); const h = parseInt(parts[0]), m = parseInt(parts[1]); if (!isNaN(h) && !isNaN(m)) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
+    return str;
+}
+function getTimeDiffMinutesNMA(arr, dep) { if (!arr || !dep) return 9999; let arrMins = parseInt(arr.split(':')[0])*60 + parseInt(arr.split(':')[1]); let depMins = parseInt(dep.split(':')[0])*60 + parseInt(dep.split(':')[1]); if (isNaN(arrMins)||isNaN(depMins)) return 9999; let diff = depMins - arrMins; if (diff < 0) diff += 1440; return diff; }
+function calculateGroundTimeStrNMA(arr, dep) { if (!arr || !dep) return "0:00:00"; const mins = getTimeDiffMinutesNMA(arr, dep); if (mins === 9999) return "0:00:00"; const hours = Math.floor(mins / 60); const minutes = mins % 60; return `${hours}:${String(minutes).padStart(2,'0')}:00`; }
+function processNMAExcel(workbook) {
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    if (rows.length < 3) return [];
+    const row1 = rows[1] || [];
+    const aircraftInfo = [];
+    for (let i = 0; i < row1.length; i++) {
+        const val = String(row1[i] || "");
+        if (val.includes("Seat:")) { const reg = val.split(" ")[0].trim(); aircraftInfo.push({ col: i, reg: reg }); }
+    }
+    if (aircraftInfo.length === 0) return [];
+    let allFlights = [], currentDate = null;
+    for (let rowIdx = 2; rowIdx < rows.length; rowIdx++) {
+        const row = rows[rowIdx]; if (!row) continue;
+        const firstCell = String(row[0] || "").trim();
+        const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+        if (monthNames.some(m=>firstCell.includes(m)) && dayNames.some(d=>firstCell.includes(d))) currentDate = firstCell;
+        if (!currentDate) continue;
+        for (let ac of aircraftInfo) {
+            const startCol = ac.col;
+            const fNo = String(row[startCol] || "").trim();
+            if (fNo === "" || fNo === "nan" || fNo === "NaN") continue;
+            const orig = String(row[startCol+1] || "").trim();
+            const dest = String(row[startCol+2] || "").trim();
+            const depTime = formatTimeNMA(row[startCol+3]);
+            const arrTime = formatTimeNMA(row[startCol+4]);
+            const remark = String(row[startCol+6] || "").trim();
+            if (orig.includes("CAI") || dest.includes("CAI") || remark.includes("CAI")) {
+                allFlights.push({ date: currentDate, reg: ac.reg, flightNo: fNo, origin: orig, dest: dest, dep: depTime, arr: arrTime, remark: remark === "nan" ? "" : remark, rowIdx: rowIdx });
+            }
+        }
+    }
+    if (allFlights.length === 0) return [];
+    const datesOrder = [...new Set(allFlights.map(f=>f.date))];
+    const finalRows = [];
+    for (let d of datesOrder) {
+        const dayFlights = allFlights.filter(f=>f.date===d);
+        const regs = [...new Set(dayFlights.map(f=>f.reg))];
+        for (let r of regs) {
+            let regFlights = dayFlights.filter(f=>f.reg===r).sort((a,b)=>a.rowIdx-b.rowIdx);
+            let i=0;
+            while (i < regFlights.length) {
+                const f = regFlights[i];
+                let combined = false;
+                if (f.dest.includes("CAI") && i+1 < regFlights.length) {
+                    const fNext = regFlights[i+1];
+                    if (fNext.origin.includes("CAI")) {
+                        const waitTime = getTimeDiffMinutesNMA(f.arr, fNext.dep);
+                        if (waitTime <= 150) {
+                            const remarkCombined = (f.remark + " " + fNext.remark).replace(/nan/gi, "").trim();
+                            finalRows.push({ Date: d, FlightNo: `${f.flightNo}/${fNext.flightNo}`, Reg: r, ARR: f.arr, DEP: fNext.dep, GroundTime: calculateGroundTimeStrNMA(f.arr, fNext.dep), Route: `${f.origin}/CAI/${fNext.dest}`, Hndlng: "TA", Remarks: remarkCombined });
+                            combined = true; i += 2;
+                        }
+                    }
+                }
+                if (!combined) {
+                    if (f.dest.includes("CAI")) { finalRows.push({ Date: d, FlightNo: f.flightNo, Reg: r, ARR: f.arr, DEP: "", GroundTime: "0:00:00", Route: `${f.origin}/CAI`, Hndlng: "AH", Remarks: f.remark.replace(/nan/gi, "").trim() }); }
+                    else { finalRows.push({ Date: d, FlightNo: f.flightNo, Reg: r, ARR: "", DEP: f.dep, GroundTime: "0:00:00", Route: `CAI/${f.dest}`, Hndlng: "DH", Remarks: f.remark.replace(/nan/gi, "").trim() }); }
+                    i += 1;
+                }
+            }
+        }
+    }
+    finalRows.sort((a,b)=>(a.DEP||a.ARR||"99:99").localeCompare(b.DEP||b.ARR||"99:99"));
+    return finalRows;
+}
+function renderNMA(data) { const tbody = document.getElementById('nmaTableBody'), tableDiv = document.getElementById('nmaTableContainer'), statsBar = document.getElementById('nmaStatsBar'), emptyState = document.getElementById('nmaEmptyState'), recordCount = document.getElementById('nmaRecordCount'); if (!data || data.length === 0) { tableDiv.style.display = 'none'; statsBar.style.display = 'none'; emptyState.style.display = 'block'; return; } emptyState.style.display = 'none'; tableDiv.style.display = 'block'; statsBar.style.display = 'flex'; recordCount.textContent = data.length + ' Flights'; let html = ''; data.forEach((row, idx) => { html += `<tr>
+        <td>${idx+1}</td>
+        <td>${row.Date||''}</td>
+        <td>${row.FlightNo||''}</td>
+        <td>${row.Reg||''}</td>
+        <td>${row.ARR||''}</td>
+        <td>${row.DEP||''}</td>
+        <td>${row.GroundTime||''}</td>
+        <td>${row.Route||''}</td>
+        <td>${row.Hndlng||''}</td>
+        <td>${row.Remarks||''}</td>
+    <tr>`; }); tbody.innerHTML = html; }
+function handleNMAFile(file) { const reader = new FileReader(); reader.onload = (e) => { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); nmaProcessedData = processNMAExcel(workbook); renderNMA(nmaProcessedData); if (nmaProcessedData.length) showToast(`✅ Extracted ${nmaProcessedData.length} flights`); else showToast("No CAI-related flights found", "warning"); } catch(err) { showToast("Error processing file"); } }; reader.readAsArrayBuffer(file); }
+document.getElementById('nmaSelectBtn').addEventListener('click', () => document.getElementById('nmaFileInput').click());
+document.getElementById('nmaFileInput').addEventListener('change', (e) => { if(e.target.files[0]) handleNMAFile(e.target.files[0]); e.target.value=''; });
+document.getElementById('nmaDropZone').addEventListener('dragover', e => e.preventDefault());
+document.getElementById('nmaDropZone').addEventListener('drop', e => { e.preventDefault(); const file = e.dataTransfer.files[0]; if(file && (file.name.endsWith('.xlsx')||file.name.endsWith('.xls'))) handleNMAFile(file); else showToast("Drop an Excel file"); });
+document.getElementById('nmaDownloadBtn').addEventListener('click', () => { if(!nmaProcessedData.length) { showToast("No data"); return; } const headers = ["#","Date","Flight#","Reg","ARR","DEP","Ground Time","Route","Handling","Remarks"]; const rows = nmaProcessedData.map((row, idx) => [idx+1, row.Date, row.FlightNo, row.Reg, row.ARR, row.DEP, row.GroundTime, row.Route, row.Hndlng, row.Remarks]); const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Cairo Schedule"); XLSX.writeFile(wb, `NMA_Cairo_${new Date().toISOString().slice(0,10)}.xlsx`); showToast("✅ Downloaded"); });
+
+// --------------------------------------------------------------
+// VIP WORD
+// --------------------------------------------------------------
+document.getElementById('generateWordBtn').addEventListener('click', () => {
+    let flight = document.getElementById('vipFlight').value, reg = document.getElementById('vipReg').value, route = document.getElementById('vipRoute').value;
+    let aircraft = document.getElementById('vipAircraftSelect').value === 'Other' ? document.getElementById('vipAircraftOther').value : document.getElementById('vipAircraftSelect').value;
+    let arrDate = document.getElementById('vipArrDate').value, arrTime = document.getElementById('vipArrTime').value, depDate = document.getElementById('vipDepDate').value, depTime = document.getElementById('vipDepTime').value;
+    let crew = document.getElementById('vipCrew').value, pax = document.getElementById('vipPax').value, clr = document.getElementById('vipClearance').value;
+    let delegation = document.getElementById('vipDelegation').value || "طائرة حكومية VIP";
+    let violation = document.getElementById('vipViolation').checked;
+    let content = `<html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial; margin:2cm;}</style></head><body><p>*نحيط علم سيادتكم بتشغيل طائرة حكومية VIP ${delegation} وبياناتها كالتالي.</p><p>رقم الرحلة: ${flight}</p><p>التسجيل: ${reg}</p><p>خط السير: ${route}</p><p>الطراز: ${aircraft}</p><p>الوصول: ${arrTime} ${arrDate}</p><p>المغادرة: ${depTime} ${depDate}</p><p>الطاقم: ${crew} | الركاب: ${pax}</p><p>رقم التصديق: ${clr}</p>${violation?'<p style="color:red">⚠️ إشارة فيول</p>':''}<p>وتفضلوا بقبول فائق الشكر.</p></body></html>`;
+    saveAs(new Blob([content], {type:"application/msword"}), `VIP_Letter_${flight}.doc`);
+    showToast("Word generated");
+});
+
+// --------------------------------------------------------------
+// FUEL PDF GENERATION
+// --------------------------------------------------------------
+async function getImageDataURL(url) { return new Promise(resolve => { if(!url) resolve(null); const img = new Image(); img.crossOrigin = "Anonymous"; img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0); resolve(canvas.toDataURL('image/png')); }; img.onerror = () => resolve(null); img.src = url; }); }
+async function generateFuelReleasePDF() {
+    let date = document.getElementById('fuelDate').value.trim();
+    let airport = document.getElementById('fuelAirportSelect').value === 'Other' ? document.getElementById('fuelAirportOther').value.trim() : document.getElementById('fuelAirportSelect').value;
+    let operator = document.getElementById('fuelOperator').value.trim();
+    let aircraft = document.getElementById('fuelAircraftSelect').value === 'Other' ? document.getElementById('fuelAircraftOther').value.trim() : document.getElementById('fuelAircraftSelect').value;
+    let reg = document.getElementById('fuelReg').value.trim();
+    let route = document.getElementById('fuelRoute').value.trim();
+    let violation = document.getElementById('fuelViolationFlag').checked;
+    if (!date || !airport || !operator || !aircraft || !reg || !route) { showToast("Please fill all fields", "warning"); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 5;
+    if (storedTopBannerURL) { try { const imgData = await getImageDataURL(storedTopBannerURL); if (imgData) doc.addImage(imgData, 'PNG', 0, y, pageWidth, 40); y += 45; } catch(e){ y=15; } } else y=15;
+    doc.setFontSize(18); doc.text("Fuel Release", 14, y); y+=10;
+    doc.setFontSize(11); doc.text("Attention: Misr Petroleum", 14, y); y+=12;
+    const tableData = [["Flight date:", date], ["Airport:", airport], ["Carrier/operator:", operator], ["Aircraft type:", aircraft], ["Registration:", reg], ["Route:", route], ["Quantity:", "As per captain's request"], ["Payment method:", "Credit"]];
+    doc.autoTable({ startY: y, body: tableData, theme: 'plain', styles: { fontSize: 10, cellPadding: 3, textColor: [0,0,255] }, columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 } } });
+    y = doc.lastAutoTable.finalY + 6;
+    doc.text("Please invoice this fuel uplift to Link Aero Trading Agency as per the agreement.", 14, y); y+=12;
+    if (violation) { doc.setTextColor(200,50,50); doc.text("⚠️ VIOLATION FLAG - This fuel release is under violation ⚠️", 14, y); doc.setTextColor(0,0,255); y+=10; }
+    doc.text("Best Regards", 14, y); y+=8;
+    doc.text("Aviation supplies", 30, y); doc.text("Nancy Nabil", 30, y+7);
+    doc.text("Finance manager", pageWidth-60, y, { align: 'right' }); doc.text("Fares Abo Shady", pageWidth-60, y+7, { align: 'right' });
+    y += 30;
+    if (storedBottomBannerURL) { try { const imgData = await getImageDataURL(storedBottomBannerURL); if (imgData) doc.addImage(imgData, 'PNG', 0, y, pageWidth, 35); } catch(e){} }
+    const pdfBlob = doc.output('blob');
+    generatedPDFBlob = pdfBlob;
+    lastPDFFileName = `Fuel_Release_${reg}_${date}.pdf`;
+    saveAs(pdfBlob, lastPDFFileName);
+    showToast("PDF generated and saved", "success");
+    document.getElementById('openEmailDraftBtn').style.display = 'inline-block';
+}
+document.getElementById('generateFuelPdfBtn').addEventListener('click', generateFuelReleasePDF);
+
+// --------------------------------------------------------------
+// OPEN EMAIL DRAFT
+// --------------------------------------------------------------
+async function openEmailDraftWithPDF() {
+    if (!generatedPDFBlob) { showToast("Please generate PDF first", "warning"); return; }
+    const snap = await db.collection('emailRecipients').get();
+    const recipients = []; snap.forEach(doc => recipients.push(doc.data().email));
+    if (recipients.length === 0) { showToast("No email recipients configured. Add emails in Settings.", "warning"); return; }
+    const toEmails = recipients.join(',');
+    const subject = `Fuel Release for ${lastPDFFileName.replace('.pdf', '')}`;
+    const body = `Dear team,\n\nThe fuel release PDF (${lastPDFFileName}) has been generated and saved to your device.\nPlease attach the file to this email before sending.\n\nBest regards,\nOPS VORTEX`;
+    saveAs(generatedPDFBlob, lastPDFFileName);
+    window.location.href = `mailto:${toEmails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    showToast("Email draft opened. Please attach the downloaded PDF file manually.", "success");
+}
+document.getElementById('openEmailDraftBtn').addEventListener('click', openEmailDraftWithPDF);
+
+// --------------------------------------------------------------
+// CLOUD LOG
+// --------------------------------------------------------------
+async function loadHistory() { if(!db) return; const snap = await db.collection("flights_cloud").orderBy("serverTime", "desc").limit(50).get(); let tbody = document.getElementById('historyBody'); tbody.innerHTML = ""; snap.forEach(doc => { let d = doc.data(); let delBtn = (currentUser === 'admin') ? `<button onclick="deleteFlight('${doc.id}')" style="background:#e11d48; border:none; border-radius:1rem; padding:4px 8px;">🗑️</button>` : ''; tbody.innerHTML += `<tr>
+        <td>${d.timestamp||"—"}</td>
+        <td><b>${d.flight}</b> (${d.reg})</b></td>
+        <td>${d.type}</td>
+        <td style="color:${d.allDone ? '#10b981' : '#f97316'}">${d.allDone ? 'COMPLETE' : 'PENDING'}</td>
+        <td>${d.user}</td>
+        <td><button onclick="editFlight('${doc.id}')" style="background:var(--accent); border:none; border-radius:1rem; padding:4px 8px;">✏️</button> ${delBtn}</td>
+    </tr>`; }); }
+async function editFlight(id) { if(!db) return; let doc = await db.collection("flights_cloud").doc(id).get(); let d = doc.data(); activeFlight = { flight: d.flight, reg: d.reg, type: d.type, airline: d.airline, arrTime: d.arrTime||"", depTime: d.depTime||"" }; editingDocId = id; attachments = {}; for(let n of allItems){ let sid=cleanId(n); if(d.items && d.items[n] && d.items[n].attachments) attachments[sid] = d.items[n].attachments; } document.getElementById('checklistArea').style.display = 'block'; buildChecklist(); setTimeout(() => { for(let n of allItems){ let sid=cleanId(n); if(d.items && d.items[n]){ let sel = document.getElementById(`s_${sid}`); if(sel) sel.value = d.items[n].status; let note = document.getElementById(`n_${sid}`); if(note) note.value = d.items[n].note; updateItemStatus(sid); } } refreshAttachUI(); }, 50); document.getElementById('activeFlightTitle').innerHTML = `✏️ Editing: ${d.flight}`; showPage('dashboard'); }
+async function deleteFlight(id) { if(confirm("Delete permanently?")) await db.collection("flights_cloud").doc(id).delete(); showToast("Deleted"); }
+function filterHistory() { let term = document.getElementById('historyFilter').value.toLowerCase(); document.querySelectorAll('#historyBody tr').forEach(row => row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none'); }
+
+// --------------------------------------------------------------
+// TOOLS
+// --------------------------------------------------------------
+function startTimer() { if(timerInterval) clearInterval(timerInterval); timerInterval = setInterval(() => { timerSeconds++; let h=Math.floor(timerSeconds/3600),m=Math.floor((timerSeconds%3600)/60),s=timerSeconds%60; document.getElementById('timerDisplay').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; },1000); }
+function stopTimer() { clearInterval(timerInterval); timerInterval = null; showToast("Timer stopped"); }
+function addFuel() { let qty = document.getElementById('fuelQtyTool').value; if(qty) { let li = document.createElement('li'); li.innerText = `${new Date().toLocaleTimeString()} - ${qty} L`; document.getElementById('fuelList').prepend(li); document.getElementById('fuelQtyTool').value = ''; showToast(`Recorded ${qty} L`); } }
+
+// --------------------------------------------------------------
+// USER MANAGEMENT
+// --------------------------------------------------------------
+async function createUser() { if(!db) return; let u = document.getElementById('newUser').value.toLowerCase(); let p = document.getElementById('newPass').value; if(!u||!p) return; await db.collection("users").doc(u).set({password:p}); showToast(`User ${u} created`); loadUserList(); }
+async function deleteUser(username) { if(confirm(`Delete user ${username}?`)) { await db.collection("users").doc(username).delete(); loadUserList(); showToast(`User ${username} deleted`); } }
+async function loadUserList() { if(!db) return; let snap = await db.collection("users").get(); let html = "<b>Users:</b><br>"; snap.forEach(d => { html += `🔹 ${d.id} `; if(currentUser === 'admin') html += `<button class="delete-user-btn" onclick="deleteUser('${d.id}')">🗑️</button>`; html += `<br>`; }); document.getElementById('userList').innerHTML = html; }
+
+// --------------------------------------------------------------
+// EMAIL RECIPIENTS
+// --------------------------------------------------------------
+async function loadEmailRecipients() { if (!db) return; const snap = await db.collection('emailRecipients').get(); const emails = []; snap.forEach(doc => emails.push({ id: doc.id, email: doc.data().email })); renderEmailList(emails); }
+async function addEmail(email) { if (!db || !email) return; await db.collection('emailRecipients').add({ email }); loadEmailRecipients(); }
+async function deleteEmail(id) { if (!db) return; await db.collection('emailRecipients').doc(id).delete(); loadEmailRecipients(); }
+function renderEmailList(emails) { const container = document.getElementById('emailList'); if (!container) return; container.innerHTML = '<b>Recipients:</b><br>'; emails.forEach(e => { container.innerHTML += `<div class="email-item">🔹 ${e.email} <button class="delete-email-btn" onclick="deleteEmail('${e.id}')">🗑️</button></div>`; }); }
+window.deleteEmail = deleteEmail;
+document.getElementById('addEmailBtn')?.addEventListener('click', () => { const email = document.getElementById('newEmail').value.trim(); if(email) addEmail(email); else showToast("Enter email"); });
+
+// --------------------------------------------------------------
+// HOTEL MANAGEMENT
+// --------------------------------------------------------------
+async function loadHotelReservations() {
+    if (!db) return;
+    const snap = await db.collection('hotel_reservations').orderBy('checkin', 'asc').get();
+    const tbody = document.getElementById('hotelTableBody');
+    tbody.innerHTML = '';
+    snap.forEach(doc => {
+        const data = doc.data();
+        const delBtn = `<button class="delete-hotel-btn" onclick="deleteHotelReservation('${doc.id}')">🗑️</button>`;
+        tbody.innerHTML += `<tr>
+            <td>${data.hotelName || ''}</td>
+            <td>${data.roomNumber || ''}</td>
+            <td>${data.guestName || ''}</td>
+            <td>${data.checkin || ''}</td>
+            <td>${data.checkout || ''}</td>
+            <td>${data.notes || ''}</td>
+            <td>${delBtn}</td>
+        </tr>`;
+    });
+}
+async function addHotelReservation() {
+    const hotelName = document.getElementById('hotelName').value.trim();
+    const roomNumber = document.getElementById('hotelRoom').value.trim();
+    const guestName = document.getElementById('hotelGuest').value.trim();
+    const checkin = document.getElementById('hotelCheckin').value.trim();
+    const checkout = document.getElementById('hotelCheckout').value.trim();
+    const notes = document.getElementById('hotelNotes').value.trim();
+    if (!hotelName || !roomNumber || !guestName || !checkin || !checkout) { showToast("Please fill all required fields", "warning"); return; }
+    await db.collection('hotel_reservations').add({ hotelName, roomNumber, guestName, checkin, checkout, notes, createdBy: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById('hotelName').value = ''; document.getElementById('hotelRoom').value = ''; document.getElementById('hotelGuest').value = '';
+    document.getElementById('hotelCheckin').value = ''; document.getElementById('hotelCheckout').value = ''; document.getElementById('hotelNotes').value = '';
+    loadHotelReservations(); showToast("Reservation added", "success");
+}
+async function deleteHotelReservation(id) { if (confirm("Delete this reservation?")) { await db.collection('hotel_reservations').doc(id).delete(); loadHotelReservations(); showToast("Deleted", "info"); } }
+document.getElementById('addHotelBtn').addEventListener('click', addHotelReservation);
+
+// --------------------------------------------------------------
+// BANNERS (localStorage)
+// --------------------------------------------------------------
+function saveTopBanner(dataURL) { storedTopBannerURL = dataURL; localStorage.setItem('topBanner', dataURL); updateBannerPreviews(); renderVIPBanners(); showToast("Top banner saved"); }
+function saveBottomBanner(dataURL) { storedBottomBannerURL = dataURL; localStorage.setItem('bottomBanner', dataURL); updateBannerPreviews(); renderVIPBanners(); showToast("Bottom banner saved"); }
+function clearTopBanner() { storedTopBannerURL = null; localStorage.removeItem('topBanner'); updateBannerPreviews(); renderVIPBanners(); showToast("Top banner cleared"); }
+function clearBottomBanner() { storedBottomBannerURL = null; localStorage.removeItem('bottomBanner'); updateBannerPreviews(); renderVIPBanners(); showToast("Bottom banner cleared"); }
+function loadBanners() { storedTopBannerURL = localStorage.getItem('topBanner'); storedBottomBannerURL = localStorage.getItem('bottomBanner'); updateBannerPreviews(); renderVIPBanners(); }
+function updateBannerPreviews() { const topDiv = document.getElementById('topBannerPreview'); if(topDiv) topDiv.innerHTML = storedTopBannerURL ? `<img src="${storedTopBannerURL}" style="max-height:70px;">` : 'No top banner'; const bottomDiv = document.getElementById('bottomBannerPreview'); if(bottomDiv) bottomDiv.innerHTML = storedBottomBannerURL ? `<img src="${storedBottomBannerURL}" style="max-height:70px;">` : 'No bottom banner'; }
+function renderVIPBanners() { const container = document.getElementById('vipBannersContainer'); if(container) { container.innerHTML = ''; if(storedTopBannerURL) container.innerHTML += `<img src="${storedTopBannerURL}" style="max-width:100%; margin-bottom:10px;">`; if(storedBottomBannerURL) container.innerHTML += `<img src="${storedBottomBannerURL}" style="max-width:100%; margin-top:10px;">`; } }
+document.getElementById('topBannerUpload').addEventListener('change', e => { if(e.target.files[0]) { const reader = new FileReader(); reader.onload = ev => saveTopBanner(ev.target.result); reader.readAsDataURL(e.target.files[0]); } });
+document.getElementById('bottomBannerUpload').addEventListener('change', e => { if(e.target.files[0]) { const reader = new FileReader(); reader.onload = ev => saveBottomBanner(ev.target.result); reader.readAsDataURL(e.target.files[0]); } });
+document.getElementById('clearTopBannerBtn').addEventListener('click', clearTopBanner);
+document.getElementById('clearBottomBannerBtn').addEventListener('click', clearBottomBanner);
+
+// --------------------------------------------------------------
+// LOGIN
+// --------------------------------------------------------------
+async function login() {
+    let u = document.getElementById('username').value.toLowerCase();
+    let p = document.getElementById('password').value;
+    if(u === "admin" && p === "zas123") return proceedLogin(u);
+    if(db) { let doc = await db.collection("users").doc(u).get(); if(doc.exists && doc.data().password === p) return proceedLogin(u); }
+    showToast("Invalid credentials");
+}
+function proceedLogin(u) {
+    currentUser = u; currentUserRole = (u === 'admin') ? 'admin' : 'user';
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('opLabel').innerHTML = `👤 ${u.toUpperCase()}`;
+    if(u === 'admin') {
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('adminBannerPanel').style.display = 'block';
+        document.getElementById('emailAdminPanel').style.display = 'block';
+        loadEmailRecipients();
+    }
+    loadUserList(); loadBanners(); loadHotelReservations(); initTimePickers(); showToast(`Welcome ${u}`);
+}
+function setTheme(theme) { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem('ops_theme', theme); showToast(`Theme: ${theme}`); }
+function showToast(msg, type="info") { let t = document.createElement('div'); t.className = 'toast'; t.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-info-circle'}"></i> ${msg}`; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
+
+// --------------------------------------------------------------
+// SIDEBAR & INIT
+// --------------------------------------------------------------
+document.getElementById('menuBtn').addEventListener('click', () => document.getElementById('sidebar').classList.add('open'));
+document.getElementById('closeSidebarBtn').addEventListener('click', () => document.getElementById('sidebar').classList.remove('open'));
+document.querySelectorAll('.sidebar .nav-item').forEach(item => { item.addEventListener('click', () => { showPage(item.getAttribute('data-page')); document.getElementById('sidebar').classList.remove('open'); }); });
+document.getElementById('fuelAirportSelect').addEventListener('change', function() { document.getElementById('otherAirportDiv').style.display = this.value === 'Other' ? 'block' : 'none'; });
+document.getElementById('fuelAircraftSelect').addEventListener('change', function() { document.getElementById('otherAircraftDiv').style.display = this.value === 'Other' ? 'block' : 'none'; });
+
+const savedTheme = localStorage.getItem('ops_theme'); if(savedTheme) setTheme(savedTheme);
+const savedLang = localStorage.getItem('ops_lang'); if(savedLang) setLanguage(savedLang); else setLanguage('en');
+applyLanguage();
+showPage('dashboard');
+</script>
+</body>
+</html>
